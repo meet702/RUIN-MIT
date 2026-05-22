@@ -37,6 +37,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/lost-found/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/rides/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/flatmates/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/marketplace/**").permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
