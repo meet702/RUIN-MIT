@@ -1,19 +1,20 @@
-import { FILTER_CATEGORIES } from "../../data/mockGigs";
 import Tag from "../ui/Tag";
 
-export default function GigFilters({ selectedCategory, onSelectCategory }) {
+const STATUSES = ["All", "open", "in_progress", "completed", "cancelled"];
+
+export default function GigFilters({ selectedStatus, onSelectStatus }) {
   return (
     <div className="-mx-4 mt-10 overflow-x-auto px-4 sm:mx-0 sm:px-0">
       <div className="flex snap-x snap-mandatory gap-3 pb-2">
-        {FILTER_CATEGORIES.map((category, index) => (
+        {STATUSES.map((status, index) => (
           <Tag
-            key={category}
-            active={selectedCategory === category}
-            className="chip-enter"
+            key={status}
+            active={selectedStatus === status}
+            className="chip-enter capitalize"
             style={{ animationDelay: `${index * 40}ms` }}
-            onClick={() => onSelectCategory(category)}
+            onClick={() => onSelectStatus(status)}
           >
-            {category}
+            {status.replace("_", " ")}
           </Tag>
         ))}
       </div>

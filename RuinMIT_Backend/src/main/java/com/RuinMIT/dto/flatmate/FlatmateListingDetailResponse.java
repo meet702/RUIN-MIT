@@ -29,6 +29,7 @@ public class FlatmateListingDetailResponse {
     private String amenities;
     private ListingStatus status;
     private FlatmateListingResponse.PosterInfo poster;
+    private Boolean hasInquired;
     private List<FlatmateInquiryResponse> inquiries; // Null if requester is not the poster
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

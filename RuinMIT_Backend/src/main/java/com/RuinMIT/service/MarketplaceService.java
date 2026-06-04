@@ -26,6 +26,7 @@ public class MarketplaceService {
     private final MarketplaceListingRepository listingRepository;
     private final MarketplaceInquiryRepository inquiryRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public MarketplaceListingResponse createListing(MarketplaceListingRequest request, String userEmail) {
@@ -76,6 +77,10 @@ public class MarketplaceService {
                     .map(this::mapToInquiryResponse)
                     .collect(Collectors.toList());
             response.setInquiries(inquiryResponses);
+            response.setHasInquired(false);
+        } else if (requesterEmail != null) {
+            userRepository.findByEmail(requesterEmail)
+                    .ifPresent(user -> response.setHasInquired(inquiryRepository.existsByListingAndSender(listing, user)));
         }
 
         return response;
@@ -108,6 +113,16 @@ public class MarketplaceService {
                 .build();
 
         inquiryRepository.save(inquiry);
+
+        String title = "New Inquiry";
+        String message = sender.getFullName() + " is interested in your listing: " + listing.getTitle();
+        notificationService.createNotification(
+                listing.getPostedBy().getId(),
+                title,
+                message,
+                "marketplace_inquiry",
+                listing.getId());
+        notificationService.sendEmailNotification(listing.getPostedBy().getEmail(), title, message);
     }
 
     @Transactional

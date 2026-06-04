@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
-import { GIG_CATEGORIES } from "../../data/mockGigs";
 import Button from "../ui/Button";
-import Tag from "../ui/Tag";
+import { useAuth } from "../../context/AuthContext";
+import DatePickerField from "../ui/DatePickerField";
+import TimePickerField from "../ui/TimePickerField";
 
 const initialForm = {
   title: "",
-  category: "Assignments",
   description: "",
   budget: "",
-  deadline: "",
+  deadlineDate: "",
+  deadlineTime: "",
 };
 
 export default function PostGigModal({ open, onClose, onSubmit }) {
   const [form, setForm] = useState(initialForm);
   const [isClosing, setIsClosing] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (!open) {
@@ -45,16 +50,37 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
     setIsClosing(true);
     window.setTimeout(() => {
       setIsClosing(false);
+      setError("");
+      setForm(initialForm);
       onClose();
     }, 250);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    if (!isAuthenticated) {
+        setError("You must be logged in to post a gig");
+        return;
+    }
 
-    onSubmit(form);
-    setForm(initialForm);
-    closeModal();
+    setIsLoading(true);
+    setError("");
+
+    const { deadlineDate, deadlineTime, ...gigFields } = form;
+    const formattedData = {
+        ...gigFields,
+        deadline: deadlineDate && deadlineTime ? `${deadlineDate}T${deadlineTime}` : null,
+        budget: form.budget ? parseFloat(form.budget) : null
+    };
+
+    const result = await onSubmit(formattedData);
+    if (result && result.success) {
+        closeModal();
+    } else {
+        setError(result?.message || "Failed to create gig");
+    }
+    
+    setIsLoading(false);
   }
 
   return (
@@ -82,6 +108,12 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
           </Button>
         </div>
 
+        {error && (
+            <div className="mb-4 rounded bg-ruin-magenta/10 p-3 text-sm text-ruin-magenta">
+                {error}
+            </div>
+        )}
+
         <label className="block">
           <span className="text-sm font-medium text-ruin-text">Gig title</span>
           <input
@@ -92,21 +124,6 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
             placeholder="Need my DBMS assignment done by tomorrow"
           />
         </label>
-
-        <div className="mt-5">
-          <p className="text-sm font-medium text-ruin-text">Category</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {GIG_CATEGORIES.map((category) => (
-              <Tag
-                key={category}
-                active={form.category === category}
-                onClick={() => updateField("category", category)}
-              >
-                {category}
-              </Tag>
-            ))}
-          </div>
-        </div>
 
         <label className="mt-5 block">
           <span className="text-sm font-medium text-ruin-text">Description</span>
@@ -128,8 +145,7 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
                 ₹
               </span>
               <input
-                required
-                min="1"
+                min="0"
                 type="number"
                 value={form.budget}
                 onChange={(event) => updateField("budget", event.target.value)}
@@ -139,20 +155,24 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
             </div>
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-ruin-text">Deadline</span>
-            <input
-              required
-              type="date"
-              value={form.deadline}
-              onChange={(event) => updateField("deadline", event.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 focus:border-ruin-orange"
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DatePickerField
+              label="Deadline Date"
+              value={form.deadlineDate}
+              align="right"
+              onChange={(value) => updateField("deadlineDate", value)}
             />
-          </label>
+            <TimePickerField
+              label="Deadline Time"
+              value={form.deadlineTime}
+              align="right"
+              onChange={(value) => updateField("deadlineTime", value)}
+            />
+          </div>
         </div>
 
-        <Button type="submit" className="mt-7 w-full">
-          Post Gig
+        <Button type="submit" className="mt-7 w-full" disabled={isLoading}>
+          {isLoading ? "Posting..." : "Post Gig"}
         </Button>
       </form>
     </div>

@@ -26,6 +26,7 @@ public class FlatmateService {
     private final FlatmateListingRepository listingRepository;
     private final FlatmateInquiryRepository inquiryRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public FlatmateListingResponse createListing(FlatmateListingRequest request, String userEmail) {
@@ -76,6 +77,10 @@ public class FlatmateService {
                     .map(this::mapToInquiryResponse)
                     .collect(Collectors.toList());
             response.setInquiries(inquiryResponses);
+            response.setHasInquired(false);
+        } else if (requesterEmail != null) {
+            userRepository.findByEmail(requesterEmail)
+                    .ifPresent(user -> response.setHasInquired(inquiryRepository.existsByListingAndSender(listing, user)));
         }
 
         return response;
@@ -108,6 +113,16 @@ public class FlatmateService {
                 .build();
 
         inquiryRepository.save(inquiry);
+
+        String title = "New Inquiry";
+        String message = sender.getFullName() + " inquired about your flatmate listing: " + listing.getTitle();
+        notificationService.createNotification(
+                listing.getPostedBy().getId(),
+                title,
+                message,
+                "flatmate_inquiry",
+                listing.getId());
+        notificationService.sendEmailNotification(listing.getPostedBy().getEmail(), title, message);
     }
 
     @Transactional

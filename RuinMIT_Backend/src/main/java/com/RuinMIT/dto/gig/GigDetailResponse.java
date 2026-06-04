@@ -24,6 +24,7 @@ public class GigDetailResponse {
     private GigStatus status;
     private UUID posterId;
     private String posterFullName;
+    private Boolean hasApplied;
     private LocalDateTime createdAt;
     private List<GigApplicationResponse> applications; // Might be null or empty depending on the requester
 }

@@ -9,10 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "vite": "^7.0.0",
+    "axios": "^1.16.1",
+    "lucide-react": "^1.16.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.15.1",
+    "sockjs-client": "^1.6.1",
+    "vite": "^7.0.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",

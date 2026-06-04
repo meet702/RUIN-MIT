@@ -29,6 +29,7 @@ public class GigService {
     private final GigRepository gigRepository;
     private final GigApplicationRepository applicationRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public GigResponse createGig(GigCreateRequest request, String userEmail) {
@@ -66,6 +67,10 @@ public class GigService {
                     .map(this::mapToApplicationResponse)
                     .collect(Collectors.toList());
             response.setApplications(apps);
+            response.setHasApplied(false);
+        } else if (userEmail != null) {
+            userRepository.findByEmail(userEmail)
+                    .ifPresent(user -> response.setHasApplied(applicationRepository.existsByGigAndApplicant(gig, user)));
         }
 
         return response;
@@ -99,6 +104,16 @@ public class GigService {
                 .build();
 
         applicationRepository.save(application);
+
+        String title = "New Application";
+        String message = applicant.getFullName() + " applied to your gig: " + gig.getTitle();
+        notificationService.createNotification(
+                gig.getPostedBy().getId(),
+                title,
+                message,
+                "gig_application",
+                gig.getId());
+        notificationService.sendEmailNotification(gig.getPostedBy().getEmail(), title, message);
     }
 
     @Transactional
@@ -126,6 +141,16 @@ public class GigService {
 
         gig.setStatus(GigStatus.in_progress);
         gigRepository.save(gig);
+
+        String title = "Application Accepted";
+        String message = "Your application for " + gig.getTitle() + " was accepted!";
+        notificationService.createNotification(
+                application.getApplicant().getId(),
+                title,
+                message,
+                "gig_accepted",
+                gig.getId());
+        notificationService.sendEmailNotification(application.getApplicant().getEmail(), title, message);
     }
 
     @Transactional

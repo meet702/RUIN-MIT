@@ -28,6 +28,7 @@ public class MarketplaceListingDetailResponse {
     private MarketplaceStatus status;
     private String imageUrl;
     private MarketplaceListingResponse.PosterInfo poster;
+    private Boolean hasInquired;
     private List<MarketplaceInquiryResponse> inquiries; // Null if requester is not the poster
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -225,6 +225,65 @@ public class AuthService {
         return ApiResponse.success("A new OTP has been sent to your email.");
     }
 
+    // ==================== FORGOT PASSWORD ====================
+
+    @Transactional
+    public ApiResponse<Void> forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email"));
+
+        if (!user.getIsActive()) {
+            throw new UnauthorizedException("Your account has been deactivated. Contact support.");
+        }
+
+        if (!user.getIsVerified()) {
+            throw new BadRequestException("Please verify your email before resetting your password");
+        }
+
+        emailVerificationRepository.invalidateAllOtpsForUser(user);
+
+        String otp = generateOtp();
+        saveOtp(user, otp);
+        emailService.sendPasswordResetOtpEmail(user.getEmail(), user.getFullName(), otp);
+
+        log.info("Password reset OTP sent to: {}", user.getEmail());
+        return ApiResponse.success("Password reset OTP has been sent to your email.");
+    }
+
+    // ==================== RESET PASSWORD ====================
+
+    @Transactional
+    public ApiResponse<Void> resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with this email"));
+
+        if (!user.getIsActive()) {
+            throw new UnauthorizedException("Your account has been deactivated. Contact support.");
+        }
+
+        EmailVerification verification = emailVerificationRepository
+                .findTopByUserAndIsUsedFalseOrderByCreatedAtDesc(user)
+                .orElseThrow(() -> new BadRequestException("No active OTP found. Please request a new one."));
+
+        if (verification.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("OTP has expired. Please request a new one.");
+        }
+
+        if (!verification.getToken().equals(request.getOtp())) {
+            throw new BadRequestException("Invalid OTP. Please try again.");
+        }
+
+        verification.setIsUsed(true);
+        emailVerificationRepository.save(verification);
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        refreshTokenRepository.revokeAllActiveTokensForUser(user);
+
+        log.info("Password reset successfully for: {}", user.getEmail());
+        return ApiResponse.success("Password reset successfully. You can now login.");
+    }
+
     // ==================== HELPERS ====================
 
     private String generateOtp() {

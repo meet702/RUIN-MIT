@@ -2,3 +2,21 @@ node_modules/
 dist/
 .vite/
 npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backend duplicate (backend lives in its own repo)
+RuinMIT_Backend/

@@ -50,4 +50,16 @@ public class AuthController {
         ApiResponse<Void> response = authService.resendOtp(request);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        ApiResponse<Void> response = authService.forgotPassword(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        ApiResponse<Void> response = authService.resetPassword(request);
+        return ResponseEntity.ok(response);
+    }
 }

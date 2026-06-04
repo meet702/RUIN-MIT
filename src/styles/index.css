@@ -39,8 +39,18 @@ button {
   cursor: pointer;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(88%) sepia(7%) saturate(337%) hue-rotate(349deg) brightness(104%) contrast(89%);
+.max-h-56::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-56::-webkit-scrollbar-track {
+  background: #0E0E0E;
+  border-radius: 999px;
+}
+
+.max-h-56::-webkit-scrollbar-thumb {
+  background: rgba(242, 101, 34, 0.72);
+  border-radius: 999px;
 }
 
 .chip-enter {

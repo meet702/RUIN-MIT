@@ -1,87 +1,66 @@
-import { useCallback, useState } from "react";
-import { mockGigs } from "../data/mockGigs";
-
-function formatDeadline(dateValue) {
-  if (!dateValue) {
-    return "Flexible";
-  }
-
-  const today = new Date();
-  const deadline = new Date(`${dateValue}T23:59:59`);
-  const diffMs = deadline.getTime() - today.getTime();
-  const days = Math.ceil(diffMs / 86400000);
-
-  if (days <= 0) {
-    return "Due today";
-  }
-
-  if (days === 1) {
-    return "Due tomorrow";
-  }
-
-  return `Due in ${days} days`;
-}
-
-function filterGigs(gigs, category) {
-  return category === "All" ? gigs : gigs.filter((gig) => gig.category === category);
-}
+import { useCallback, useState, useEffect } from "react";
+import { gigService } from "../api/gigService";
 
 export function useGigs() {
-  const [gigs, setGigs] = useState(mockGigs);
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [visibleGigs, setVisibleGigs] = useState(mockGigs);
+  const [gigs, setGigs] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState("open");
   const [isExiting, setIsExiting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const selectCategory = useCallback(
-    (category) => {
-      if (category === selectedCategory) {
-        return;
+  const fetchGigs = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Fetch open gigs from backend
+      const response = await gigService.getOpenGigs(0, 50);
+      if (response.success) {
+        setGigs(response.data.content || []);
       }
+    } catch (error) {
+      console.error("Failed to fetch gigs", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-      setSelectedCategory(category);
+  useEffect(() => {
+    fetchGigs();
+  }, [fetchGigs]);
+
+  const visibleGigs = gigs.filter(gig => selectedStatus === "All" || gig.status === selectedStatus);
+
+  const selectStatus = useCallback(
+    (status) => {
+      if (status === selectedStatus) return;
+      setSelectedStatus(status);
       setIsExiting(true);
-
       window.setTimeout(() => {
-        setVisibleGigs(filterGigs(gigs, category));
         setIsExiting(false);
       }, 150);
     },
-    [gigs, selectedCategory]
+    [selectedStatus]
   );
 
-  const addGig = useCallback(
-    (gig) => {
-      const nextGig = {
-        id: Date.now(),
-        title: gig.title,
-        category: gig.category,
-        budget: Number(gig.budget),
-        deadline: formatDeadline(gig.deadline),
-        description: gig.description,
-        postedBy: {
-          name: "You",
-          branch: "MIT-WPU",
-          year: "Student",
-        },
-      };
-
-      setGigs((currentGigs) => [nextGig, ...currentGigs]);
-      setVisibleGigs((currentVisibleGigs) => {
-        if (selectedCategory !== "All" && nextGig.category !== selectedCategory) {
-          return currentVisibleGigs;
-        }
-
-        return [nextGig, ...currentVisibleGigs];
-      });
-    },
-    [selectedCategory]
-  );
+  const addGig = useCallback(async (gigData) => {
+    try {
+      const response = await gigService.createGig(gigData);
+      if (response.success) {
+        await fetchGigs();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (error) {
+      console.error("Failed to post gig", error);
+      return { success: false, message: error.response?.data?.message || "Failed to post gig" };
+    }
+  }, [fetchGigs]);
 
   return {
     gigs: visibleGigs,
-    selectedCategory,
-    selectCategory,
+    selectedStatus,
+    selectStatus,
     addGig,
     isExiting,
+    isLoading,
+    refreshGigs: fetchGigs
   };
 }

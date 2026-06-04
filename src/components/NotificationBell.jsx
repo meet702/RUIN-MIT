@@ -1,0 +1,292 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Bell } from "lucide-react";
+import notificationService from "../services/NotificationService";
+
+const formatTimeAgo = (dateValue) => {
+  if (!dateValue) return "";
+
+  const createdAt = new Date(dateValue);
+  const seconds = Math.max(1, Math.floor((Date.now() - createdAt.getTime()) / 1000));
+
+  if (seconds < 60) return "just now";
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
+
+  return createdAt.toLocaleDateString();
+};
+
+const playNotificationSound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
+    
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (err) {
+    console.error("Failed to play notification sound", err);
+  }
+};
+
+export default function NotificationBell() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [toastNotification, setToastNotification] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const dropdownRef = useRef(null);
+  const eventSourceRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const shouldReconnectRef = useRef(true);
+
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const data = await notificationService.getUnreadCount();
+      setUnreadCount(Number(data?.count ?? 0));
+    } catch (err) {
+      console.error("Failed to load unread notification count", err);
+    }
+  }, []);
+
+  const loadNotifications = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const data = await notificationService.getNotifications();
+      const loadedNotifications = Array.isArray(data) ? data.slice(0, 10) : [];
+      setNotifications(loadedNotifications);
+      
+      // Fallback: if loadUnreadCount missed it, sync from the top 10 list
+      const localUnread = loadedNotifications.filter((n) => n.isRead === false).length;
+      setUnreadCount((prev) => Math.max(prev, localUnread));
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+      setError("Unable to load notifications.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUnreadCount();
+    loadNotifications();
+
+    const connectSSE = () => {
+      const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+      if (!token || !shouldReconnectRef.current) {
+        return;
+      }
+
+      eventSourceRef.current?.close();
+
+      const eventSource = new EventSource(
+        `http://localhost:8089/api/notifications/stream?token=${encodeURIComponent(token)}`,
+        { withCredentials: true }
+      );
+
+      eventSource.onmessage = (event) => {
+        try {
+          const notification = JSON.parse(event.data);
+          setNotifications((current) => {
+            const withoutDuplicate = current.filter((item) => item.id !== notification.id);
+            return [notification, ...withoutDuplicate].slice(0, 10);
+          });
+
+          if (notification.isRead === false) {
+            setUnreadCount((count) => count + 1);
+            
+            // Play notification tone
+            playNotificationSound();
+            
+            // Show brief toast popup
+            setToastNotification(notification);
+            setTimeout(() => {
+              setToastNotification((current) => 
+                current?.id === notification.id ? null : current
+              );
+            }, 5000);
+          }
+        } catch (err) {
+          console.error("Failed to parse notification stream event", err);
+        }
+      };
+
+      eventSource.onerror = () => {
+        eventSource.close();
+
+        if (shouldReconnectRef.current) {
+          reconnectTimeoutRef.current = window.setTimeout(connectSSE, 5000);
+        }
+      };
+
+      eventSourceRef.current = eventSource;
+    };
+
+    connectSSE();
+
+    return () => {
+      shouldReconnectRef.current = false;
+      eventSourceRef.current?.close();
+
+      if (reconnectTimeoutRef.current) {
+        window.clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
+  }, [loadNotifications, loadUnreadCount]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadNotifications();
+    }
+  }, [isOpen, loadNotifications]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleNotificationClick = async (notification) => {
+    if (notification.isRead) return;
+
+    try {
+      const updatedNotification = await notificationService.markAsRead(notification.id);
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === notification.id
+            ? { ...item, isRead: updatedNotification?.isRead ?? true }
+            : item
+        )
+      );
+      setUnreadCount((count) => Math.max(0, count - 1));
+    } catch (err) {
+      console.error("Failed to mark notification as read", err);
+      setError("Unable to update notification.");
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications((current) => current.map((item) => ({ ...item, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to mark all notifications as read", err);
+      setError("Unable to update notifications.");
+    }
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-ruin-border bg-ruin-card text-ruin-text transition-colors hover:bg-ruin-background"
+        aria-label="Notifications"
+      >
+        <Bell size={18} />
+        {unreadCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold leading-none text-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-ruin-border bg-ruin-card shadow-xl">
+          <div className="flex items-center justify-between border-b border-ruin-border px-4 py-3">
+            <h2 className="font-heading text-sm font-semibold text-ruin-text">Notifications</h2>
+            <button
+              type="button"
+              onClick={handleMarkAllAsRead}
+              className="text-xs font-semibold text-ruin-orange transition-colors hover:text-ruin-magenta disabled:cursor-not-allowed disabled:text-ruin-muted"
+              disabled={unreadCount === 0}
+            >
+              Mark all as read
+            </button>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto">
+            {isLoading ? (
+              <p className="px-4 py-6 text-center text-sm text-ruin-muted">Loading...</p>
+            ) : error ? (
+              <p className="px-4 py-6 text-center text-sm text-ruin-magenta">{error}</p>
+            ) : notifications.length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-ruin-muted">No notifications yet.</p>
+            ) : (
+              notifications.map((notification) => (
+                <button
+                  key={notification.id}
+                  type="button"
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`block w-full border-b border-ruin-border px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-ruin-background ${
+                    notification.isRead ? "bg-ruin-card" : "bg-ruin-orange/10"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-ruin-text">{notification.title}</p>
+                    <span className="shrink-0 text-xs text-ruin-muted">
+                      {formatTimeAgo(notification.createdAt)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-5 text-ruin-muted">{notification.message}</p>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+      {toastNotification && (
+        <div className="fixed bottom-6 right-6 z-[100] w-80 rounded-xl border border-ruin-border bg-ruin-card shadow-2xl p-4 transition-all duration-300">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <h3 className="font-heading text-sm font-semibold text-ruin-text">
+                {toastNotification.title}
+              </h3>
+              <p className="mt-1 text-sm leading-5 text-ruin-muted line-clamp-2">
+                {toastNotification.message}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastNotification(null)}
+              className="shrink-0 text-ruin-muted transition-colors hover:text-ruin-text"
+              aria-label="Close notification"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

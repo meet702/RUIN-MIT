@@ -26,6 +26,7 @@ public class RideService {
     private final RideRepository rideRepository;
     private final RideBookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public RideResponse createRide(RideCreateRequest request, String userEmail) {
@@ -130,6 +131,16 @@ public class RideService {
             ride.setStatus(RideStatus.full);
         }
         rideRepository.save(ride);
+
+        String title = "New Booking";
+        String message = passenger.getFullName() + " booked a seat on your ride to " + ride.getToLocation();
+        notificationService.createNotification(
+                ride.getPostedBy().getId(),
+                title,
+                message,
+                "ride_booking",
+                ride.getId());
+        notificationService.sendEmailNotification(ride.getPostedBy().getEmail(), title, message);
     }
 
     @Transactional
