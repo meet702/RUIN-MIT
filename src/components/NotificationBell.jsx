@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell } from "lucide-react";
 import notificationService from "../services/NotificationService";
 
@@ -30,21 +31,31 @@ const playNotificationSound = () => {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
-    
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    
-    osc.start();
-    osc.stop(ctx.currentTime + 0.3);
+
+    const playTone = (freq, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      // 'sine' or 'triangle' produce the cleanest, most bell-like tones
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, startTime);
+      
+      // Attack and release for a softer, bell-like envelope
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.4, startTime + 0.02); // quick fade in
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration); // smooth fade out
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    const now = ctx.currentTime;
+    // Play a friendly, recognizable double-chime (Major 3rd interval: C5 then E5)
+    playTone(523.25, now, 0.4);        // C5
+    playTone(659.25, now + 0.15, 0.5); // E5
   } catch (err) {
     console.error("Failed to play notification sound", err);
   }
@@ -92,6 +103,7 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
+    shouldReconnectRef.current = true; // Fix for React Strict Mode double-invoke
     loadUnreadCount();
     loadNotifications();
 
@@ -265,7 +277,7 @@ export default function NotificationBell() {
           </div>
         </div>
       )}
-      {toastNotification && (
+      {toastNotification && createPortal(
         <div className="fixed bottom-6 right-6 z-[100] w-80 rounded-xl border border-ruin-border bg-ruin-card shadow-2xl p-4 transition-all duration-300">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
@@ -285,7 +297,8 @@ export default function NotificationBell() {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
