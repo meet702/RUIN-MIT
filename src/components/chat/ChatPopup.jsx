@@ -59,6 +59,7 @@ function referenceLabel(conversation) {
     ride: "Ride",
     marketplace: "Item",
     flatmate: "Flatmate",
+    lost_found: "Lost & Found",
   };
   return `${labels[conversation.referenceType] || "Re"}: ${title}`;
 }
@@ -160,6 +161,13 @@ export default function ChatPopup() {
           setMessages((items) => (
             items.some((item) => item.id === incomingMessage.id) ? items : [...items, incomingMessage]
           ));
+          window.dispatchEvent(new CustomEvent("ruinmit:active-chat-message", {
+            detail: {
+              conversationId: incomingMessage.conversationId,
+              content: incomingMessage.content,
+              senderName: incomingMessage.senderName,
+            },
+          }));
           scrollToBottom();
         }
 

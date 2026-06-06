@@ -72,7 +72,7 @@ public class FlatmateService {
 
         // Include inquiries only if the requester is the poster
         if (requesterEmail != null && listing.getPostedBy().getEmail().equals(requesterEmail)) {
-            List<FlatmateInquiry> inquiries = inquiryRepository.findByListing(listing);
+            List<FlatmateInquiry> inquiries = inquiryRepository.findByListingId(listing.getId());
             List<FlatmateInquiryResponse> inquiryResponses = inquiries.stream()
                     .map(this::mapToInquiryResponse)
                     .collect(Collectors.toList());

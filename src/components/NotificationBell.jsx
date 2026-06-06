@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bell } from "lucide-react";
 import notificationService from "../services/NotificationService";
+import { useChat } from "../context/ChatContext";
 
 const formatTimeAgo = (dateValue) => {
   if (!dateValue) return "";
@@ -61,7 +62,54 @@ const playNotificationSound = () => {
   }
 };
 
+const getNotificationConversationId = (notification) => (
+  notification?.conversationId
+  ?? notification?.data?.conversationId
+  ?? notification?.metadata?.conversationId
+  ?? (notification?.referenceType === "chat" ? notification?.referenceId : null)
+);
+
+const normalize = (value) => String(value ?? "").trim().toLowerCase();
+
+const isMessageNotification = (notification) => {
+  const title = normalize(notification?.title);
+  const type = normalize(notification?.type ?? notification?.notificationType ?? notification?.category);
+
+  return type.includes("chat")
+    || type.includes("message")
+    || title.startsWith("new message from");
+};
+
+const isNotificationForRecentActiveMessage = (notification, recentMessages) => {
+  const title = normalize(notification?.title);
+  const message = normalize(notification?.message);
+  const now = Date.now();
+
+  return recentMessages.some((recentMessage) => (
+    now - recentMessage.receivedAt < 10000
+    && normalize(recentMessage.content) === message
+    && (
+      !recentMessage.senderName
+      || title.includes(normalize(recentMessage.senderName))
+    )
+  ));
+};
+
+const isNotificationForActiveChat = (notification, chatState, recentMessages) => {
+  if (!chatState.isChatOpen || !chatState.activeConversationId || !isMessageNotification(notification)) {
+    return false;
+  }
+
+  const notificationConversationId = getNotificationConversationId(notification);
+  if (notificationConversationId) {
+    return String(notificationConversationId) === String(chatState.activeConversationId);
+  }
+
+  return isNotificationForRecentActiveMessage(notification, recentMessages);
+};
+
 export default function NotificationBell() {
+  const { activeConversationId, isChatOpen } = useChat();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -72,6 +120,29 @@ export default function NotificationBell() {
   const eventSourceRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const shouldReconnectRef = useRef(true);
+  const chatStateRef = useRef({ activeConversationId: null, isChatOpen: false });
+  const recentActiveMessagesRef = useRef([]);
+
+  useEffect(() => {
+    chatStateRef.current = { activeConversationId, isChatOpen };
+  }, [activeConversationId, isChatOpen]);
+
+  useEffect(() => {
+    const handleActiveChatMessage = (event) => {
+      const { conversationId, content, senderName } = event.detail || {};
+      if (!conversationId || !content) {
+        return;
+      }
+
+      recentActiveMessagesRef.current = [
+        { conversationId, content, senderName, receivedAt: Date.now() },
+        ...recentActiveMessagesRef.current,
+      ].slice(0, 5);
+    };
+
+    window.addEventListener("ruinmit:active-chat-message", handleActiveChatMessage);
+    return () => window.removeEventListener("ruinmit:active-chat-message", handleActiveChatMessage);
+  }, []);
 
   const loadUnreadCount = useCallback(async () => {
     try {
@@ -123,6 +194,21 @@ export default function NotificationBell() {
       eventSource.onmessage = (event) => {
         try {
           const notification = JSON.parse(event.data);
+          const isActiveChatNotification = isNotificationForActiveChat(
+            notification,
+            chatStateRef.current,
+            recentActiveMessagesRef.current
+          );
+
+          if (isActiveChatNotification) {
+            if (notification.isRead === false && notification.id) {
+              notificationService.markAsRead(notification.id).catch((err) => {
+                console.error("Failed to mark active chat notification as read", err);
+              });
+            }
+            return;
+          }
+
           setNotifications((current) => {
             const withoutDuplicate = current.filter((item) => item.id !== notification.id);
             return [notification, ...withoutDuplicate].slice(0, 10);

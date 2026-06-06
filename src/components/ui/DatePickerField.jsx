@@ -47,6 +47,7 @@ function formatDate(value) {
 
 export default function DatePickerField({ label, value, onChange, required = false, align = "left" }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [placement, setPlacement] = useState("bottom");
   const selectedDate = parseDate(value);
   const initialMonth = selectedDate || new Date();
   const [visibleMonth, setVisibleMonth] = useState(
@@ -70,6 +71,31 @@ export default function DatePickerField({ label, value, onChange, required = fal
       setVisibleMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
     }
   }, [value]);
+
+  useEffect(() => {
+    if (!isOpen || !wrapperRef.current) {
+      return;
+    }
+
+    const updatePlacement = () => {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const popoverHeight = 360;
+      const gap = 12;
+      const spaceBelow = window.innerHeight - rect.bottom - gap;
+      const spaceAbove = rect.top - gap;
+
+      setPlacement(spaceBelow < popoverHeight && spaceAbove > spaceBelow ? "top" : "bottom");
+    };
+
+    updatePlacement();
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
+    };
+  }, [isOpen]);
 
   const days = useMemo(() => {
     const firstDay = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
@@ -106,7 +132,9 @@ export default function DatePickerField({ label, value, onChange, required = fal
 
       {isOpen && (
         <div
-          className={`absolute top-full z-[70] mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-ruin-orange/45 bg-[#111111] p-4 shadow-2xl shadow-black/60 ${
+          className={`absolute z-[70] w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-ruin-orange/45 bg-[#111111] p-4 shadow-2xl shadow-black/60 ${
+            placement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          } ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >

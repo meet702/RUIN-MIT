@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,14 @@ import java.util.UUID;
 public class MarketplaceController {
 
     private final MarketplaceService marketplaceService;
+
+    private String getAuthenticatedEmail(Authentication authentication) {
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)
+                ? authentication.getName()
+                : null;
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<MarketplaceListingResponse>> createListing(
@@ -51,9 +60,7 @@ public class MarketplaceController {
             @PathVariable UUID id,
             Authentication authentication) {
 
-        String requesterEmail = (authentication != null && authentication.isAuthenticated())
-                ? authentication.getName()
-                : null;
+        String requesterEmail = getAuthenticatedEmail(authentication);
 
         MarketplaceListingDetailResponse response = marketplaceService.getListingDetails(id, requesterEmail);
         return ResponseEntity.ok(ApiResponse.success("Listing details retrieved successfully", response));
