@@ -1,9 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
 import Navbar from "./components/layout/Navbar";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import ChatPopup from "./components/chat/ChatPopup";
+import { useAuth } from "./context/AuthContext";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -23,6 +24,18 @@ import RidesPage from "./pages/RidesPage";
 import RideDetailPage from "./pages/RideDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 
+function AppShell() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <>
+      <Navbar />
+      <Outlet />
+      {isAuthenticated && <ChatPopup />}
+    </>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -36,25 +49,28 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          {/* Main App Routes - Protected */}
-          <Route element={<><Navbar /><ProtectedRoute /><ChatPopup /></>}>
+          {/* Main App Routes */}
+          <Route element={<AppShell />}>
             <Route path="/" element={<Navigate to="/gigs" replace />} />
             <Route path="/gigs" element={<GigBoardPage />} />
-            <Route path="/gigs/:id" element={<GigDetailPage />} />
             
             <Route path="/flatmates" element={<FlatmatePage />} />
-            <Route path="/flatmates/:id" element={<FlatmateDetailPage />} />
             
             <Route path="/marketplace" element={<MarketplacePage />} />
-            <Route path="/marketplace/:id" element={<MarketplaceDetailPage />} />
             
             <Route path="/lost-found" element={<LostFoundPage />} />
-            <Route path="/lost-found/:id" element={<LostFoundDetailPage />} />
             
             <Route path="/rides" element={<RidesPage />} />
-            <Route path="/rides/:id" element={<RideDetailPage />} />
 
-            <Route path="/profile" element={<ProfilePage />} />
+            {/* Feature details and account routes require sign in */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/gigs/:id" element={<GigDetailPage />} />
+              <Route path="/flatmates/:id" element={<FlatmateDetailPage />} />
+              <Route path="/marketplace/:id" element={<MarketplaceDetailPage />} />
+              <Route path="/lost-found/:id" element={<LostFoundDetailPage />} />
+              <Route path="/rides/:id" element={<RideDetailPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
           </Route>
           </Routes>
         </BrowserRouter>
