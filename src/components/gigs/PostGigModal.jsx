@@ -69,7 +69,7 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
     const { deadlineDate, deadlineTime, ...gigFields } = form;
     const formattedData = {
         ...gigFields,
-        deadline: deadlineDate && deadlineTime ? `${deadlineDate}T${deadlineTime}` : null,
+        deadline: deadlineDate && deadlineTime ? `${deadlineDate}T${deadlineTime}:00` : null,
         budget: form.budget ? parseFloat(form.budget) : null
     };
 

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell } from "lucide-react";
 import notificationService from "../services/NotificationService";
+import { useChat } from "../context/ChatContext";
 
 const formatTimeAgo = (dateValue) => {
   if (!dateValue) return "";
@@ -30,27 +32,84 @@ const playNotificationSound = () => {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
-    
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    
-    osc.start();
-    osc.stop(ctx.currentTime + 0.3);
+
+    const playTone = (freq, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      // 'sine' or 'triangle' produce the cleanest, most bell-like tones
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, startTime);
+      
+      // Attack and release for a softer, bell-like envelope
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.4, startTime + 0.02); // quick fade in
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration); // smooth fade out
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    const now = ctx.currentTime;
+    // Play a friendly, recognizable double-chime (Major 3rd interval: C5 then E5)
+    playTone(523.25, now, 0.4);        // C5
+    playTone(659.25, now + 0.15, 0.5); // E5
   } catch (err) {
     console.error("Failed to play notification sound", err);
   }
 };
 
+const getNotificationConversationId = (notification) => (
+  notification?.conversationId
+  ?? notification?.data?.conversationId
+  ?? notification?.metadata?.conversationId
+  ?? (notification?.referenceType === "chat" ? notification?.referenceId : null)
+);
+
+const normalize = (value) => String(value ?? "").trim().toLowerCase();
+
+const isMessageNotification = (notification) => {
+  const title = normalize(notification?.title);
+  const type = normalize(notification?.type ?? notification?.notificationType ?? notification?.category);
+
+  return type.includes("chat")
+    || type.includes("message")
+    || title.startsWith("new message from");
+};
+
+const isNotificationForRecentActiveMessage = (notification, recentMessages) => {
+  const title = normalize(notification?.title);
+  const message = normalize(notification?.message);
+  const now = Date.now();
+
+  return recentMessages.some((recentMessage) => (
+    now - recentMessage.receivedAt < 10000
+    && normalize(recentMessage.content) === message
+    && (
+      !recentMessage.senderName
+      || title.includes(normalize(recentMessage.senderName))
+    )
+  ));
+};
+
+const isNotificationForActiveChat = (notification, chatState, recentMessages) => {
+  if (!chatState.isChatOpen || !chatState.activeConversationId || !isMessageNotification(notification)) {
+    return false;
+  }
+
+  const notificationConversationId = getNotificationConversationId(notification);
+  if (notificationConversationId) {
+    return String(notificationConversationId) === String(chatState.activeConversationId);
+  }
+
+  return isNotificationForRecentActiveMessage(notification, recentMessages);
+};
+
 export default function NotificationBell() {
+  const { activeConversationId, isChatOpen } = useChat();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -61,6 +120,29 @@ export default function NotificationBell() {
   const eventSourceRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const shouldReconnectRef = useRef(true);
+  const chatStateRef = useRef({ activeConversationId: null, isChatOpen: false });
+  const recentActiveMessagesRef = useRef([]);
+
+  useEffect(() => {
+    chatStateRef.current = { activeConversationId, isChatOpen };
+  }, [activeConversationId, isChatOpen]);
+
+  useEffect(() => {
+    const handleActiveChatMessage = (event) => {
+      const { conversationId, content, senderName } = event.detail || {};
+      if (!conversationId || !content) {
+        return;
+      }
+
+      recentActiveMessagesRef.current = [
+        { conversationId, content, senderName, receivedAt: Date.now() },
+        ...recentActiveMessagesRef.current,
+      ].slice(0, 5);
+    };
+
+    window.addEventListener("ruinmit:active-chat-message", handleActiveChatMessage);
+    return () => window.removeEventListener("ruinmit:active-chat-message", handleActiveChatMessage);
+  }, []);
 
   const loadUnreadCount = useCallback(async () => {
     try {
@@ -92,6 +174,7 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
+    shouldReconnectRef.current = true; // Fix for React Strict Mode double-invoke
     loadUnreadCount();
     loadNotifications();
 
@@ -111,6 +194,21 @@ export default function NotificationBell() {
       eventSource.onmessage = (event) => {
         try {
           const notification = JSON.parse(event.data);
+          const isActiveChatNotification = isNotificationForActiveChat(
+            notification,
+            chatStateRef.current,
+            recentActiveMessagesRef.current
+          );
+
+          if (isActiveChatNotification) {
+            if (notification.isRead === false && notification.id) {
+              notificationService.markAsRead(notification.id).catch((err) => {
+                console.error("Failed to mark active chat notification as read", err);
+              });
+            }
+            return;
+          }
+
           setNotifications((current) => {
             const withoutDuplicate = current.filter((item) => item.id !== notification.id);
             return [notification, ...withoutDuplicate].slice(0, 10);
@@ -265,7 +363,7 @@ export default function NotificationBell() {
           </div>
         </div>
       )}
-      {toastNotification && (
+      {toastNotification && createPortal(
         <div className="fixed bottom-6 right-6 z-[100] w-80 rounded-xl border border-ruin-border bg-ruin-card shadow-2xl p-4 transition-all duration-300">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
@@ -285,7 +383,8 @@ export default function NotificationBell() {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

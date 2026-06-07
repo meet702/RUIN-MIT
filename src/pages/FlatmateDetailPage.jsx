@@ -35,6 +35,9 @@ export default function FlatmateDetailPage() {
   const [listing, setListing] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  
+  const [inquiryMessage, setInquiryMessage] = useState("");
+  const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
 
   const fetchListing = async () => {
     setIsLoading(true);
@@ -77,6 +80,23 @@ export default function FlatmateDetailPage() {
         } catch (err) {
             console.error("Failed to delete", err);
         }
+    }
+  };
+
+  const handleInquire = async () => {
+    if (!inquiryMessage.trim()) return;
+    setIsSubmittingInquiry(true);
+    try {
+      const response = await flatmateService.sendInquiry(id, inquiryMessage);
+      if (response.success) {
+        setInquiryMessage("");
+        await fetchListing();
+      }
+    } catch (err) {
+      console.error("Failed to send inquiry", err);
+      alert("Failed to send inquiry. Please try again.");
+    } finally {
+      setIsSubmittingInquiry(false);
     }
   };
 
@@ -170,45 +190,64 @@ export default function FlatmateDetailPage() {
             {!isOwner && listing.status === "open" && (
               <div className="pt-4 border-t border-ruin-border">
                 <h3 className="text-sm font-medium text-ruin-text mb-3">Interested?</h3>
-                <ChatButton
-                  otherUserId={listing.poster?.id}
-                  otherUserName={listing.poster?.fullName}
-                  referenceType="flatmate"
-                  referenceId={listing.id}
-                  buttonText="Chat with Poster"
-                />
+                {listing.hasInquired ? (
+                  <p className="text-sm text-ruin-muted p-3 bg-ruin-background rounded-lg border border-ruin-border text-center">
+                    You have already inquired about this listing.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    <textarea
+                      value={inquiryMessage}
+                      onChange={(e) => setInquiryMessage(e.target.value)}
+                      placeholder="Hi, I'm interested..."
+                      className="w-full resize-none rounded-lg border border-ruin-border bg-ruin-background p-3 text-sm text-ruin-text focus:border-ruin-orange focus:outline-none focus:ring-1 focus:ring-ruin-orange"
+                      rows="3"
+                    ></textarea>
+                    <button
+                      onClick={handleInquire}
+                      disabled={isSubmittingInquiry || !inquiryMessage.trim()}
+                      className="w-full rounded-lg bg-ruin-orange px-4 py-2 font-medium text-ruin-background transition-colors hover:bg-orange-600 disabled:opacity-50"
+                    >
+                      {isSubmittingInquiry ? "Sending..." : "Send Inquiry"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {isOwner && listing.inquiries && listing.inquiries.length > 0 && (
+      {isOwner && listing.inquiries && (
         <div className="mt-8">
           <h2 className="font-heading text-2xl font-bold text-ruin-text mb-4">Inquiries ({listing.inquiries.length})</h2>
-          <div className="space-y-4">
-            {listing.inquiries.map((inq) => (
-              <div key={inq.id} className="rounded-xl border border-ruin-border bg-ruin-card p-5">
-                <div className="flex items-center gap-3 mb-3">
-                    <Avatar name={inq.sender?.fullName || inq.inquirerFullName || "User"} />
-                    <div>
-                        <span className="text-ruin-text font-medium block">{inq.sender?.fullName || inq.inquirerFullName || "User"}</span>
-                        <span className="text-xs text-ruin-muted">{new Date(inq.createdAt).toLocaleString()}</span>
-                    </div>
-                    <div className="ml-auto">
-                        <ChatButton
-                            otherUserId={inq.sender?.id || inq.senderId}
-                            otherUserName={inq.sender?.fullName || inq.inquirerFullName}
-                            referenceType="flatmate"
-                            referenceId={listing.id}
-                            buttonText="Chat"
-                        />
-                    </div>
+          {listing.inquiries.length === 0 ? (
+            <p className="text-ruin-muted">No one has inquired about this listing yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {listing.inquiries.map((inq) => (
+                <div key={inq.id} className="rounded-xl border border-ruin-border bg-ruin-card p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                      <Avatar name={inq.sender?.fullName || inq.inquirerFullName || "User"} />
+                      <div>
+                          <span className="text-ruin-text font-medium block">{inq.sender?.fullName || inq.inquirerFullName || "User"}</span>
+                          <span className="text-xs text-ruin-muted">{new Date(inq.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="ml-auto">
+                          <ChatButton
+                              otherUserId={inq.sender?.id || inq.senderId}
+                              otherUserName={inq.sender?.fullName || inq.inquirerFullName}
+                              referenceType="flatmate"
+                              referenceId={listing.id}
+                              buttonText="Chat"
+                          />
+                      </div>
+                  </div>
+                  <p className="text-sm text-ruin-text whitespace-pre-wrap">{inq.message}</p>
                 </div>
-                <p className="text-sm text-ruin-text whitespace-pre-wrap">{inq.message}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -15,4 +15,6 @@ public interface FlatmateInquiryRepository extends JpaRepository<FlatmateInquiry
     boolean existsByListingAndSender(FlatmateListing listing, User sender);
 
     List<FlatmateInquiry> findByListing(FlatmateListing listing);
+
+    List<FlatmateInquiry> findByListingId(UUID listingId);
 }

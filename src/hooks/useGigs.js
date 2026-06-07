@@ -1,6 +1,28 @@
 import { useCallback, useState, useEffect } from "react";
 import { gigService } from "../api/gigService";
 
+function getGigErrorMessage(error) {
+  const responseData = error.response?.data;
+
+  if (responseData?.errors && typeof responseData.errors === "object") {
+    return Object.values(responseData.errors).filter(Boolean).join(", ");
+  }
+
+  if (responseData?.message) {
+    return responseData.message;
+  }
+
+  if (error.response?.status === 401) {
+    return "Please log in again to post a gig.";
+  }
+
+  if (error.response?.status === 403) {
+    return "You are not allowed to post a gig with this session. Please log in again.";
+  }
+
+  return "Failed to post gig";
+}
+
 export function useGigs() {
   const [gigs, setGigs] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("open");
@@ -44,13 +66,18 @@ export function useGigs() {
     try {
       const response = await gigService.createGig(gigData);
       if (response.success) {
+        setGigs(prev => {
+          // Prevent duplicates if fetchGigs already got it
+          if (prev.some(g => g.id === response.data.id)) return prev;
+          return [response.data, ...prev];
+        });
         await fetchGigs();
         return { success: true };
       }
       return { success: false, message: response.message };
     } catch (error) {
       console.error("Failed to post gig", error);
-      return { success: false, message: error.response?.data?.message || "Failed to post gig" };
+      return { success: false, message: getGigErrorMessage(error) };
     }
   }, [fetchGigs]);
 

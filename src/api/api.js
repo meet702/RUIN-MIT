@@ -8,10 +8,18 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+  const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Disable caching for all API requests
+  if (config.method?.toLowerCase() === 'get') {
+      config.headers['Cache-Control'] = 'no-cache';
+      config.headers['Pragma'] = 'no-cache';
+      config.headers['Expires'] = '0';
+  }
+  
   return config;
 });
 
@@ -37,6 +45,7 @@ api.interceptors.response.use(
           const { accessToken, refreshToken: newRefreshToken } = response.data.data;
           
           localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("token", accessToken);
           localStorage.setItem("refreshToken", newRefreshToken);
 
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -45,6 +54,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // Failed to refresh token, logout user
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { lostFoundService } from "../api/lostFoundService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
+import ChatButton from "../components/chat/ChatButton";
 import { Search, Info } from "lucide-react";
 
 export default function LostFoundDetailPage() {
@@ -61,7 +62,9 @@ export default function LostFoundDetailPage() {
   if (isLoading) return <div className="p-8 text-center text-ruin-muted">Loading post...</div>;
   if (error || !post) return <div className="p-8 text-center text-ruin-magenta">{error || "Post not found"}</div>;
 
-  const isOwner = user?.id === post.posterId;
+  const posterId = post.posterId || post.poster?.id;
+  const posterName = post.posterFullName || post.poster?.fullName;
+  const isOwner = user?.id && posterId && String(user.id) === String(posterId);
   const isLost = post.type === "lost";
   const accent = isLost ? "#F26522" : "#00C9A7";
 
@@ -126,9 +129,9 @@ export default function LostFoundDetailPage() {
                 <div className="pt-4 border-t border-ruin-border">
                 <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Contact Poster</h3>
                 <div className="mt-3 flex items-center gap-3">
-                    <Avatar name={post.posterFullName} />
+                    <Avatar name={posterName} />
                     <div>
-                        <span className="text-ruin-text font-medium block">{post.posterFullName}</span>
+                        <span className="text-ruin-text font-medium block">{posterName}</span>
                         {!isOwner && <span className="text-sm text-ruin-muted">Message or find them on campus</span>}
                     </div>
                 </div>
@@ -148,9 +151,20 @@ export default function LostFoundDetailPage() {
                 )}
                 
                 {!isOwner && post.status === "open" && (
-                    <p className="mt-4 text-xs text-ruin-muted">
-                        If you have information about this item, please try to reach out to the poster directly on campus or through college groups.
-                    </p>
+                    <div className="mt-4 border-t border-ruin-border pt-4">
+                        <ChatButton
+                            otherUserId={posterId}
+                            otherUserName={posterName}
+                            referenceType="lost_found"
+                            referenceId={post.id}
+                            buttonText="Chat with poster"
+                        />
+                        {!isAuthenticated && (
+                            <p className="mt-3 text-xs text-ruin-muted">
+                                Log in to message the poster about this item.
+                            </p>
+                        )}
+                    </div>
                 )}
             </div>
             </div>
