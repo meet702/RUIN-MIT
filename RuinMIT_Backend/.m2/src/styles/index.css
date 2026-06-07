@@ -1,0 +1,137 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #F0EDE6;
+  background: #0E0E0E;
+  font-family: "DM Sans", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #0E0E0E;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #0E0E0E;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.max-h-56::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-56::-webkit-scrollbar-track {
+  background: #0E0E0E;
+  border-radius: 999px;
+}
+
+.max-h-56::-webkit-scrollbar-thumb {
+  background: rgba(242, 101, 34, 0.72);
+  border-radius: 999px;
+}
+
+.chip-enter {
+  animation: chip-slide-in 300ms ease-out both;
+}
+
+.gig-card-enter {
+  animation: gig-fade-up 350ms ease-out both;
+}
+
+.gig-grid-exit {
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.modal-enter {
+  animation: modal-scale-in 250ms ease-out both;
+}
+
+.modal-exit {
+  animation: modal-scale-out 250ms ease-out both;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gig-action {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.gig-action:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: #0E0E0E;
+}
+
+@keyframes chip-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes gig-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modal-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
