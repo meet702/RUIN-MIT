@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import GigFilters from "../components/gigs/GigFilters";
-import GigGrid from "../components/gigs/GigGrid";
+import GigCard from "../components/gigs/GigCard";
 import PostGigModal from "../components/gigs/PostGigModal";
+import ListingSections from "../components/listings/ListingSections";
 import Button from "../components/ui/Button";
 import { useGigs } from "../hooks/useGigs";
 import { useAuth } from "../context/AuthContext";
+import { getCurrentUserId } from "../utils/ownership";
 
 export default function GigBoardPage() {
   const { gigs, selectedStatus, selectStatus, addGig, isExiting, isLoading } = useGigs();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const currentUserId = getCurrentUserId(user);
 
   const handlePostClick = () => {
     if (!isAuthenticated) {
@@ -46,7 +49,16 @@ export default function GigBoardPage() {
                 No gigs found in this category.
             </div>
         ) : (
-            <GigGrid gigs={gigs} isExiting={isExiting} />
+            <div className={isExiting ? "gig-grid-exit" : ""}>
+              <ListingSections
+                items={gigs}
+                currentUserId={currentUserId}
+                gridClassName="grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3"
+                renderCard={(gig, index, isOwnPost) => (
+                  <GigCard key={gig.id} gig={gig} index={index} isOwnPost={isOwnPost} />
+                )}
+              />
+            </div>
         )}
       </div>
 

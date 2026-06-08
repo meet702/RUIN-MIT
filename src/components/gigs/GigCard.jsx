@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Avatar from "../ui/Avatar";
 import GigBadge from "./GigBadge";
 
-export default function GigCard({ gig, index }) {
+export default function GigCard({ gig, index, isOwnPost = false }) {
   const accent = "#00C9A7"; // Default accent
   const [isHovered, setIsHovered] = useState(false);
 
@@ -16,6 +16,8 @@ export default function GigCard({ gig, index }) {
       style={{
         animationDelay: `${index * 60}ms`,
         borderColor: isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftColor: isOwnPost ? "#F26522" : isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftWidth: isOwnPost ? "2px" : undefined,
         transform: isHovered ? "translateY(-3px)" : undefined,
       }}
       onMouseEnter={() => setIsHovered(true)}
@@ -51,11 +53,11 @@ export default function GigCard({ gig, index }) {
 
       <Link
         to={`/gigs/${gig.id}`}
-        className="gig-action mt-5 w-full rounded-lg border px-4 py-3 font-heading text-sm font-semibold text-center block"
+        className="mt-5 w-full rounded-lg border px-4 py-3 font-heading text-sm font-semibold text-center block transition-colors"
         style={{
-          "--accent": accent,
-          borderColor: accent,
-          color: accent,
+          borderColor: isHovered ? accent : "#2A2A2A",
+          color: isHovered ? accent : "#E5E5E5",
+          backgroundColor: isHovered ? `${accent}0A` : "transparent",
         }}
       >
         View Details

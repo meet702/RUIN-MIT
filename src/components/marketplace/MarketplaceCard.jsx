@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Avatar from "../ui/Avatar";
 import { Package } from "lucide-react";
 
-export default function MarketplaceCard({ listing, index }) {
+export default function MarketplaceCard({ listing, index, isOwnPost = false }) {
   const accent = listing.status === "available" ? "#00C9A7" : "#FF2D6F";
   const [isHovered, setIsHovered] = useState(false);
 
@@ -15,6 +15,8 @@ export default function MarketplaceCard({ listing, index }) {
       style={{
         animationDelay: `${index * 60}ms`,
         borderColor: isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftColor: isOwnPost ? "#F26522" : isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftWidth: isOwnPost ? "2px" : undefined,
         transform: isHovered ? "translateY(-3px)" : undefined,
       }}
       onMouseEnter={() => setIsHovered(true)}

@@ -6,6 +6,7 @@ import Avatar from "../components/ui/Avatar";
 import GigBadge from "../components/gigs/GigBadge";
 import Button from "../components/ui/Button";
 import ChatButton from "../components/chat/ChatButton";
+import PostGigModal from "../components/gigs/PostGigModal";
 
 export default function GigDetailPage() {
   const { id } = useParams();
@@ -19,6 +20,7 @@ export default function GigDetailPage() {
   const [applicationMessage, setApplicationMessage] = useState("");
   const [isApplying, setIsApplying] = useState(false);
   const [applyError, setApplyError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchGig = async () => {
     setIsLoading(true);
@@ -76,6 +78,19 @@ export default function GigDetailPage() {
     }
   };
 
+  const handleEditGig = async (data) => {
+    try {
+      const response = await gigService.updateGig(id, data);
+      if (response.success) {
+        await fetchGig();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || "Failed to update gig" };
+    }
+  };
+
   const handleAcceptApplicant = async (appId) => {
     try {
       const response = await gigService.acceptApplicant(id, appId);
@@ -95,7 +110,7 @@ export default function GigDetailPage() {
     return <div className="p-8 text-center text-ruin-magenta">{error || "Gig not found"}</div>;
   }
 
-  const isPoster = user?.id === gig.posterId;
+  const isPoster = user?.id && gig.posterId && String(user.id) === String(gig.posterId);
   const formattedDeadline = gig.deadline ? new Date(gig.deadline).toLocaleDateString() : "Flexible";
   const postedAt = gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : "";
 
@@ -107,6 +122,7 @@ export default function GigDetailPage() {
         </button>
         {isPoster && (
           <div className="flex gap-2">
+            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
             {gig.status === "open" && (
                 <button onClick={() => handleStatusUpdate("cancelled")} className="text-sm font-medium text-ruin-magenta px-3 py-1 border border-ruin-magenta rounded-md">Cancel Gig</button>
             )}
@@ -234,6 +250,14 @@ export default function GigDetailPage() {
           </div>
         </div>
       )}
+
+      <PostGigModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditGig}
+        initialData={gig}
+        mode="edit"
+      />
     </div>
   );
 }

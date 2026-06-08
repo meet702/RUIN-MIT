@@ -52,6 +52,17 @@ public class LostAndFoundController {
         return ResponseEntity.ok(ApiResponse.success("Post details retrieved successfully", response));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<LostAndFoundResponse>> updatePost(
+            @PathVariable UUID id,
+            @Valid @RequestBody LostAndFoundRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        LostAndFoundResponse response = lostAndFoundService.updatePost(id, request, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Post updated successfully", response));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<LostAndFoundResponse>> updateStatus(
             @PathVariable UUID id,

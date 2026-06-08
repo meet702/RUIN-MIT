@@ -101,6 +101,37 @@ public class RideService {
     }
 
     @Transactional
+    public RideResponse updateRide(UUID rideId, RideCreateRequest request, String userEmail) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ride not found"));
+
+        if (!ride.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the ride poster can edit this ride");
+        }
+
+        int bookedSeats = ride.getTotalSeats() - ride.getAvailableSeats();
+        if (request.getTotalSeats() < bookedSeats) {
+            throw new BadRequestException("Total seats cannot be less than existing bookings");
+        }
+
+        ride.setVehicleType(request.getVehicleType());
+        ride.setFromLocation(request.getFromLocation());
+        ride.setToLocation(request.getToLocation());
+        ride.setDepartureTime(request.getDepartureTime());
+        ride.setTotalSeats(request.getTotalSeats());
+        ride.setAvailableSeats(request.getTotalSeats() - bookedSeats);
+        ride.setFarePerPerson(request.getFarePerPerson());
+        ride.setNotes(request.getNotes());
+
+        if (ride.getStatus() == RideStatus.open || ride.getStatus() == RideStatus.full) {
+            ride.setStatus(ride.getAvailableSeats() == 0 ? RideStatus.full : RideStatus.open);
+        }
+
+        ride = rideRepository.save(ride);
+        return mapToRideResponse(ride);
+    }
+
+    @Transactional
     public void bookRide(UUID rideId, String userEmail) {
         User passenger = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

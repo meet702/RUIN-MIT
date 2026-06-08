@@ -50,6 +50,17 @@ public class RideController {
         return ResponseEntity.ok(ApiResponse.success("Ride details retrieved successfully", response));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<RideResponse>> updateRide(
+            @PathVariable UUID id,
+            @Valid @RequestBody RideCreateRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        RideResponse response = rideService.updateRide(id, request, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Ride updated successfully", response));
+    }
+
     @PostMapping("/{id}/book")
     public ResponseEntity<ApiResponse<Void>> bookRide(
             @PathVariable UUID id,

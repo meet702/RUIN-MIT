@@ -4,6 +4,7 @@ import { marketplaceService } from "../api/marketplaceService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
+import PostMarketplaceModal from "../components/marketplace/PostMarketplaceModal";
 import { Package } from "lucide-react";
 
 function getCurrentUserId(user) {
@@ -36,6 +37,7 @@ export default function MarketplaceDetailPage() {
   const [listing, setListing] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchListing = async () => {
     setIsLoading(true);
@@ -65,6 +67,19 @@ export default function MarketplaceDetailPage() {
       }
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const handleEditListing = async (data) => {
+    try {
+      const response = await marketplaceService.updateListing(id, data);
+      if (response.success) {
+        await fetchListing();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || "Failed to update listing" };
     }
   };
 
@@ -98,6 +113,7 @@ export default function MarketplaceDetailPage() {
         </button>
         {isOwner && (
           <div className="flex gap-2">
+            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
             {listing.status === "available" && (
                 <button onClick={() => handleStatusUpdate("sold")} className="text-sm font-medium text-ruin-background bg-ruin-orange px-3 py-1 rounded-md">Mark as Sold</button>
             )}
@@ -211,6 +227,14 @@ export default function MarketplaceDetailPage() {
           </div>
         </div>
       )}
+
+      <PostMarketplaceModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditListing}
+        initialData={listing}
+        mode="edit"
+      />
     </div>
   );
 }

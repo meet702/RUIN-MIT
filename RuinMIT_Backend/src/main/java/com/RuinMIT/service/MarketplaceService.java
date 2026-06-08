@@ -87,6 +87,26 @@ public class MarketplaceService {
     }
 
     @Transactional
+    public MarketplaceListingResponse updateListing(UUID listingId, MarketplaceListingRequest request, String userEmail) {
+        MarketplaceListing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
+
+        if (!listing.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the poster can edit this listing");
+        }
+
+        listing.setTitle(request.getTitle());
+        listing.setDescription(request.getDescription());
+        listing.setPrice(request.getPrice());
+        listing.setCategory(request.getCategory());
+        listing.setCondition(request.getCondition());
+        listing.setImageUrl(request.getImageUrl());
+
+        listing = listingRepository.save(listing);
+        return mapToListingResponse(listing);
+    }
+
+    @Transactional
     public void sendInquiry(UUID listingId, MarketplaceInquiryRequest request, String userEmail) {
         User sender = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

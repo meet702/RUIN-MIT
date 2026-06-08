@@ -12,13 +12,51 @@ const initialForm = {
   deadlineTime: "",
 };
 
-export default function PostGigModal({ open, onClose, onSubmit }) {
+function toDateTimeParts(value) {
+  if (!value) {
+    return { date: "", time: "" };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return { date: "", time: "" };
+  }
+
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  const [datePart, timePart] = local.toISOString().slice(0, 16).split("T");
+  return { date: datePart, time: timePart };
+}
+
+function buildForm(initialData) {
+  if (!initialData) {
+    return initialForm;
+  }
+
+  const deadline = toDateTimeParts(initialData.deadline);
+  return {
+    title: initialData.title || "",
+    description: initialData.description || "",
+    budget: initialData.budget ?? "",
+    deadlineDate: deadline.date,
+    deadlineTime: deadline.time,
+  };
+}
+
+export default function PostGigModal({ open, onClose, onSubmit, initialData = null, mode = "create" }) {
   const [form, setForm] = useState(initialForm);
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
   const { isAuthenticated } = useAuth();
+  const isEditing = mode === "edit";
+
+  useEffect(() => {
+    if (open) {
+      setForm(buildForm(initialData));
+      setError("");
+    }
+  }, [open, initialData]);
 
   useEffect(() => {
     if (!open) {
@@ -51,7 +89,7 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
     window.setTimeout(() => {
       setIsClosing(false);
       setError("");
-      setForm(initialForm);
+      setForm(buildForm(initialData));
       onClose();
     }, 250);
   }
@@ -77,7 +115,7 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
     if (result && result.success) {
         closeModal();
     } else {
-        setError(result?.message || "Failed to create gig");
+        setError(result?.message || `Failed to ${isEditing ? "update" : "create"} gig`);
     }
     
     setIsLoading(false);
@@ -100,8 +138,8 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl font-bold text-ruin-text">Post a Gig</h2>
-            <p className="mt-1 text-sm text-ruin-muted">Put the task on the board.</p>
+            <h2 className="font-heading text-2xl font-bold text-ruin-text">{isEditing ? "Edit Gig" : "Post a Gig"}</h2>
+            <p className="mt-1 text-sm text-ruin-muted">{isEditing ? "Update the task details." : "Put the task on the board."}</p>
           </div>
           <Button variant="ghost" className="-mr-2 -mt-2" onClick={closeModal} aria-label="Close modal">
             Close
@@ -172,7 +210,7 @@ export default function PostGigModal({ open, onClose, onSubmit }) {
         </div>
 
         <Button type="submit" className="mt-7 w-full" disabled={isLoading}>
-          {isLoading ? "Posting..." : "Post Gig"}
+          {isLoading ? (isEditing ? "Saving..." : "Posting...") : (isEditing ? "Save Changes" : "Post Gig")}
         </Button>
       </form>
     </div>

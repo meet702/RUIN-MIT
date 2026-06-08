@@ -64,6 +64,17 @@ public class FlatmateController {
         return ResponseEntity.ok(ApiResponse.success("Listing details retrieved successfully", response));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<FlatmateListingResponse>> updateListing(
+            @PathVariable UUID id,
+            @Valid @RequestBody FlatmateListingRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        FlatmateListingResponse response = flatmateService.updateListing(id, request, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Listing updated successfully", response));
+    }
+
     @PostMapping("/{id}/inquire")
     public ResponseEntity<ApiResponse<Void>> sendInquiry(
             @PathVariable UUID id,

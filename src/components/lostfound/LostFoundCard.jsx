@@ -3,13 +3,14 @@ import { Link } from "react-router-dom";
 import Avatar from "../ui/Avatar";
 import { Search, Info } from "lucide-react";
 
-export default function LostFoundCard({ post, index }) {
+export default function LostFoundCard({ post, index, isOwnPost = false }) {
   const isLost = post.type === "lost";
   const accent = isLost ? "#F26522" : "#00C9A7"; // Orange for lost, Green for found
   const [isHovered, setIsHovered] = useState(false);
 
   const postedAt = post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "";
-  const firstImage = post.images && post.images.length > 0 ? post.images[0].imageUrl : null;
+  const firstImage = post.imageUrls?.[0] || (post.images && post.images.length > 0 ? post.images[0].imageUrl : null);
+  const posterName = post.posterFullName || post.poster?.fullName || "User";
 
   return (
     <article
@@ -17,6 +18,8 @@ export default function LostFoundCard({ post, index }) {
       style={{
         animationDelay: `${index * 60}ms`,
         borderColor: isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftColor: isOwnPost ? "#F26522" : isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftWidth: isOwnPost ? "2px" : undefined,
         transform: isHovered ? "translateY(-3px)" : undefined,
       }}
       onMouseEnter={() => setIsHovered(true)}
@@ -59,8 +62,8 @@ export default function LostFoundCard({ post, index }) {
           </p>
 
           <div className="mt-4 flex items-center gap-2 pt-4 border-t border-ruin-border mt-auto">
-            <Avatar name={post.posterFullName} accent={accent} />
-            <p className="text-sm text-ruin-muted line-clamp-1">{post.posterFullName}</p>
+            <Avatar name={posterName} accent={accent} />
+            <p className="text-sm text-ruin-muted line-clamp-1">{posterName}</p>
           </div>
 
           <Link

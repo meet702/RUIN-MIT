@@ -22,6 +22,11 @@ export const lostFoundService = {
     return response.data;
   },
 
+  updatePost: async (id, postData) => {
+    const response = await api.put(`/lost-found/${id}`, postData);
+    return response.data;
+  },
+
   updateStatus: async (id, status) => {
     const response = await api.patch(`/lost-found/${id}/status`, { status });
     return response.data;

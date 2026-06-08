@@ -5,7 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import RideCard from "../components/rides/RideCard";
 import PostRideModal from "../components/rides/PostRideModal";
+import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import { getCurrentUserId } from "../utils/ownership";
 
 const VEHICLE_TYPES = ["All", "auto", "car", "bike", "other"];
 
@@ -15,8 +17,9 @@ export default function RidesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const currentUserId = getCurrentUserId(user);
 
   const fetchRides = useCallback(async () => {
     setIsLoading(true);
@@ -97,11 +100,13 @@ export default function RidesPage() {
                 No rides found.
             </div>
         ) : (
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {rides.map((ride, i) => (
-                <RideCard key={ride.id} ride={ride} index={i} />
-              ))}
-            </div>
+            <ListingSections
+              items={rides}
+              currentUserId={currentUserId}
+              renderCard={(ride, i, isOwnPost) => (
+                <RideCard key={ride.id} ride={ride} index={i} isOwnPost={isOwnPost} currentUser={user} />
+              )}
+            />
         )}
       </div>
 

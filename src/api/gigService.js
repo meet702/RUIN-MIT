@@ -16,6 +16,11 @@ export const gigService = {
     return response.data;
   },
 
+  updateGig: async (id, gigData) => {
+    const response = await api.put(`/gigs/${id}`, gigData);
+    return response.data;
+  },
+
   applyToGig: async (id, message) => {
     const response = await api.post(`/gigs/${id}/apply`, { message });
     return response.data;

@@ -66,6 +66,17 @@ public class MarketplaceController {
         return ResponseEntity.ok(ApiResponse.success("Listing details retrieved successfully", response));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<MarketplaceListingResponse>> updateListing(
+            @PathVariable UUID id,
+            @Valid @RequestBody MarketplaceListingRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        MarketplaceListingResponse response = marketplaceService.updateListing(id, request, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Listing updated successfully", response));
+    }
+
     @PostMapping("/{id}/inquire")
     public ResponseEntity<ApiResponse<Void>> sendInquiry(
             @PathVariable UUID id,

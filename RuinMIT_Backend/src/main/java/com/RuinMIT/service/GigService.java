@@ -77,6 +77,24 @@ public class GigService {
     }
 
     @Transactional
+    public GigResponse updateGig(UUID gigId, GigCreateRequest request, String userEmail) {
+        Gig gig = gigRepository.findById(gigId)
+                .orElseThrow(() -> new ResourceNotFoundException("Gig not found"));
+
+        if (!gig.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the gig poster can edit this gig");
+        }
+
+        gig.setTitle(request.getTitle());
+        gig.setDescription(request.getDescription());
+        gig.setBudget(request.getBudget());
+        gig.setDeadline(request.getDeadline());
+
+        gig = gigRepository.save(gig);
+        return mapToGigResponse(gig);
+    }
+
+    @Transactional
     public void applyToGig(UUID gigId, GigApplyRequest request, String userEmail) {
         User applicant = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

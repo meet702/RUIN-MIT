@@ -22,6 +22,11 @@ export const flatmateService = {
     return response.data;
   },
 
+  updateListing: async (id, listingData) => {
+    const response = await api.put(`/flatmates/${id}`, listingData);
+    return response.data;
+  },
+
   sendInquiry: async (id, message) => {
     const response = await api.post(`/flatmates/${id}/inquire`, { message });
     return response.data;

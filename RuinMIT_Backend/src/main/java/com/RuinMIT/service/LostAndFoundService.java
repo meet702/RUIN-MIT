@@ -70,6 +70,34 @@ public class LostAndFoundService {
     }
 
     @Transactional
+    public LostAndFoundResponse updatePost(UUID id, LostAndFoundRequest request, String userEmail) {
+        LostAndFound post = lostAndFoundRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + id));
+
+        if (!post.getPostedBy().getEmail().equalsIgnoreCase(userEmail)) {
+            throw new UnauthorizedException("Only the poster can edit this post");
+        }
+
+        post.setType(request.getType());
+        post.setTitle(request.getTitle());
+        post.setDescription(request.getDescription());
+        post.setLocationFoundLost(request.getLocationFoundLost());
+        post.getImages().clear();
+
+        if (request.getImageUrls() != null) {
+            for (String imageUrl : request.getImageUrls()) {
+                LostFoundImage image = LostFoundImage.builder()
+                        .imageUrl(imageUrl)
+                        .build();
+                post.addImage(image);
+            }
+        }
+
+        post = lostAndFoundRepository.save(post);
+        return mapToResponse(post);
+    }
+
+    @Transactional
     @SuppressWarnings("PMD.PreserveStackTrace")
     public LostAndFoundResponse updateStatus(UUID id, LostFoundStatus newStatus, String userEmail) {
         LostAndFound post = lostAndFoundRepository.findById(id)

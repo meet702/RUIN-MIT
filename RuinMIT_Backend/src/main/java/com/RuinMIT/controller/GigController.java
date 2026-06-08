@@ -53,6 +53,17 @@ public class GigController {
         return ResponseEntity.ok(ApiResponse.success("Gig details retrieved successfully", response));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<GigResponse>> updateGig(
+            @PathVariable UUID id,
+            @Valid @RequestBody GigCreateRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        GigResponse response = gigService.updateGig(id, request, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Gig updated successfully", response));
+    }
+
     @PostMapping("/{id}/apply")
     public ResponseEntity<ApiResponse<Void>> applyToGig(
             @PathVariable UUID id,

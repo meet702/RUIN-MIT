@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Avatar from "../ui/Avatar";
 
-export default function FlatmateCard({ listing, index }) {
+export default function FlatmateCard({ listing, index, isOwnPost = false }) {
   const accent = listing.status === "open" ? "#00C9A7" : "#FF2D6F";
   const [isHovered, setIsHovered] = useState(false);
 
@@ -14,6 +14,8 @@ export default function FlatmateCard({ listing, index }) {
       style={{
         animationDelay: `${index * 60}ms`,
         borderColor: isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftColor: isOwnPost ? "#F26522" : isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftWidth: isOwnPost ? "2px" : undefined,
         transform: isHovered ? "translateY(-3px)" : undefined,
       }}
       onMouseEnter={() => setIsHovered(true)}

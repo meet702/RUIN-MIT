@@ -87,6 +87,27 @@ public class FlatmateService {
     }
 
     @Transactional
+    public FlatmateListingResponse updateListing(UUID listingId, FlatmateListingRequest request, String userEmail) {
+        FlatmateListing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
+
+        if (!listing.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the poster can edit this listing");
+        }
+
+        listing.setTitle(request.getTitle());
+        listing.setDescription(request.getDescription());
+        listing.setLocation(request.getLocation());
+        listing.setRentPerMonth(request.getRentPerMonth());
+        listing.setAvailableFrom(request.getAvailableFrom());
+        listing.setGenderPreference(request.getGenderPreference());
+        listing.setAmenities(request.getAmenities());
+
+        listing = listingRepository.save(listing);
+        return mapToListingResponse(listing);
+    }
+
+    @Transactional
     public void sendInquiry(UUID listingId, FlatmateInquiryRequest request, String userEmail) {
         User sender = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

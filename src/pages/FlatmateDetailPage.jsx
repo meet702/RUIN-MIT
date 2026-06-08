@@ -4,6 +4,7 @@ import { flatmateService } from "../api/flatmateService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
+import PostFlatmateModal from "../components/flatmates/PostFlatmateModal";
 
 function getCurrentUserId(user) {
   if (user?.id) {
@@ -35,6 +36,7 @@ export default function FlatmateDetailPage() {
   const [listing, setListing] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const [inquiryMessage, setInquiryMessage] = useState("");
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
@@ -67,6 +69,19 @@ export default function FlatmateDetailPage() {
       }
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const handleEditListing = async (data) => {
+    try {
+      const response = await flatmateService.updateListing(id, data);
+      if (response.success) {
+        await fetchListing();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || "Failed to update listing" };
     }
   };
 
@@ -115,6 +130,7 @@ export default function FlatmateDetailPage() {
         </button>
         {isOwner && (
           <div className="flex gap-2">
+            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
             {listing.status === "open" && (
                 <button onClick={() => handleStatusUpdate("closed")} className="text-sm font-medium text-ruin-background bg-ruin-orange px-3 py-1 rounded-md">Mark as Closed</button>
             )}
@@ -250,6 +266,14 @@ export default function FlatmateDetailPage() {
           )}
         </div>
       )}
+
+      <PostFlatmateModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditListing}
+        initialData={listing}
+        mode="edit"
+      />
     </div>
   );
 }
