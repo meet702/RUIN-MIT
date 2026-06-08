@@ -31,6 +31,11 @@ export const gigService = {
     return response.data;
   },
 
+  unacceptApplicant: async (gigId, applicationId) => {
+    const response = await api.post(`/gigs/${gigId}/applications/${applicationId}/unaccept`);
+    return response.data;
+  },
+
   updateGigStatus: async (id, status) => {
     const response = await api.patch(`/gigs/${id}/status`, { status });
     return response.data;

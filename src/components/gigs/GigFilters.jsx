@@ -1,6 +1,6 @@
 import Tag from "../ui/Tag";
 
-const STATUSES = ["All", "open", "in_progress", "completed", "cancelled"];
+const STATUSES = ["open", "in_progress"];
 
 export default function GigFilters({ selectedStatus, onSelectStatus }) {
   return (
@@ -14,7 +14,7 @@ export default function GigFilters({ selectedStatus, onSelectStatus }) {
             style={{ animationDelay: `${index * 40}ms` }}
             onClick={() => onSelectStatus(status)}
           >
-            {status.replace("_", " ")}
+            {status === "in_progress" ? "assigned" : status}
           </Tag>
         ))}
       </div>
