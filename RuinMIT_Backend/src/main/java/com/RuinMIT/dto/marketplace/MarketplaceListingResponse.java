@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -25,7 +26,7 @@ public class MarketplaceListingResponse {
     private MarketplaceCategory category;
     private ItemCondition condition;
     private MarketplaceStatus status;
-    private String imageUrl;
+    private List<String> imageUrls;
     private PosterInfo poster;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

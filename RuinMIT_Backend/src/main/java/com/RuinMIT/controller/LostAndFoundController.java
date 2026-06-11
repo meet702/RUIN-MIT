@@ -83,4 +83,15 @@ public class LostAndFoundController {
         lostAndFoundService.deletePost(id, userEmail);
         return ResponseEntity.ok(ApiResponse.success("Post deleted successfully"));
     }
+
+    @DeleteMapping("/{id}/images")
+    public ResponseEntity<ApiResponse<LostAndFoundResponse>> removeImage(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.RuinMIT.dto.ImageDeleteRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        LostAndFoundResponse response = lostAndFoundService.removeImageFromPost(id, request.getImageUrl(), userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Image removed successfully", response));
+    }
 }

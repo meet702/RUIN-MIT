@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -35,4 +36,6 @@ public class FlatmateListingRequest {
     private GenderPreference genderPreference;
 
     private String amenities;
+
+    private List<String> imageUrls;
 }

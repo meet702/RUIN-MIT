@@ -107,4 +107,15 @@ public class FlatmateController {
         flatmateService.deleteListing(id, userEmail);
         return ResponseEntity.ok(ApiResponse.success("Listing deleted successfully"));
     }
+
+    @DeleteMapping("/{id}/images")
+    public ResponseEntity<ApiResponse<FlatmateListingResponse>> removeImage(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.RuinMIT.dto.ImageDeleteRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        FlatmateListingResponse response = flatmateService.removeImageFromListing(id, request.getImageUrl(), userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Image removed successfully", response));
+    }
 }

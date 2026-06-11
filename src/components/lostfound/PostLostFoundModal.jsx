@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
+import ImageUploader from "../common/ImageUploader";
 
 const initialForm = {
   type: "lost",
   title: "",
   description: "",
   locationFoundLost: "",
-  imageUrls: "",
+  imageUrls: [],
 };
 
 function buildForm(initialData) {
@@ -21,7 +22,7 @@ function buildForm(initialData) {
     title: initialData.title || "",
     description: initialData.description || "",
     locationFoundLost: initialData.locationFoundLost || "",
-    imageUrls: Array.isArray(urls) ? urls.join(", ") : "",
+    imageUrls: urls,
   };
 }
 
@@ -74,7 +75,6 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
 
     const formattedData = {
         ...form,
-        imageUrls: form.imageUrls.split(",").map(url => url.trim()).filter(url => url)
     };
 
     const result = await onSubmit(formattedData);
@@ -176,15 +176,17 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-ruin-text">Image URLs (comma separated, optional)</span>
-            <input
-              value={form.imageUrls}
-              onChange={(e) => updateField("imageUrls", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
-              placeholder="https://example.com/img1.jpg, https://..."
+          <div className="block">
+            <span className="text-sm font-medium text-ruin-text mb-2 block">Images (Optional, max 5)</span>
+            <ImageUploader
+              maxFiles={5}
+              currentImageUrls={form.imageUrls}
+              deleteEndpoint="lostfound"
+              referenceId={isEditing ? initialData.id : null}
+              onUpload={(urls) => updateField("imageUrls", urls)}
+              onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
             />
-          </label>
+          </div>
         </div>
 
         <Button type="submit" className="mt-7 w-full" disabled={isLoading} style={form.type === "found" ? { backgroundColor: "#00C9A7", color: "#111" } : {}}>

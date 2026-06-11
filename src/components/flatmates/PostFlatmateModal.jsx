@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import DatePickerField from "../ui/DatePickerField";
+import ImageUploader from "../common/ImageUploader";
 
 const initialForm = {
   title: "",
@@ -11,6 +12,7 @@ const initialForm = {
   availableFrom: "",
   genderPreference: "any",
   amenities: "",
+  imageUrls: [],
 };
 
 function buildForm(initialData) {
@@ -26,6 +28,7 @@ function buildForm(initialData) {
     availableFrom: initialData.availableFrom || "",
     genderPreference: initialData.genderPreference || "any",
     amenities: initialData.amenities || "",
+    imageUrls: initialData.imageUrls || [],
   };
 }
 
@@ -195,6 +198,18 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
               placeholder="WiFi, AC, Washing Machine"
             />
           </label>
+          
+          <div className="block">
+            <span className="text-sm font-medium text-ruin-text mb-2 block">Images (Optional, max 5)</span>
+            <ImageUploader
+              maxFiles={5}
+              currentImageUrls={form.imageUrls}
+              deleteEndpoint="flatmates"
+              referenceId={isEditing ? initialData.id : null}
+              onUpload={(urls) => updateField("imageUrls", urls)}
+              onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
+            />
+          </div>
         </div>
 
         <Button type="submit" className="mt-7 w-full" disabled={isLoading}>

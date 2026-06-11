@@ -109,4 +109,15 @@ public class MarketplaceController {
         marketplaceService.deleteListing(id, userEmail);
         return ResponseEntity.ok(ApiResponse.success("Listing deleted successfully"));
     }
+
+    @DeleteMapping("/{id}/images")
+    public ResponseEntity<ApiResponse<MarketplaceListingResponse>> removeImage(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.RuinMIT.dto.ImageDeleteRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        MarketplaceListingResponse response = marketplaceService.removeImageFromListing(id, request.getImageUrl(), userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Image removed successfully", response));
+    }
 }

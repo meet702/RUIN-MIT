@@ -103,9 +103,11 @@ export default function LostFoundDetailPage() {
 
       <div className="rounded-2xl border border-ruin-border bg-ruin-card overflow-hidden">
         {imageUrls.length > 0 ? (
-            <div className="w-full h-64 md:h-96 bg-black flex items-center justify-center relative overflow-x-auto snap-x">
-                {imageUrls.map((imageUrl) => (
-                    <img key={imageUrl} src={imageUrl} alt="Item" className="max-w-full max-h-full object-contain shrink-0 snap-center mx-4" />
+            <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4 border-b border-ruin-border">
+                {imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center block rounded-xl overflow-hidden shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+                        <img src={url} alt={`${post.title} - ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
                 ))}
             </div>
         ) : (
