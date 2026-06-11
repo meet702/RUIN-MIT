@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
+import ImageUploader from "../common/ImageUploader";
 
 const CATEGORIES = ["books", "electronics", "cycles", "stationery", "clothing", "furniture", "other"];
 const CONDITIONS = ["new", "like_new", "good", "fair"];
@@ -11,16 +12,39 @@ const initialForm = {
   price: "",
   category: "other",
   condition: "good",
-  imageUrl: "",
+  imageUrls: [],
 };
 
-export default function PostMarketplaceModal({ open, onClose, onSubmit }) {
+function buildForm(initialData) {
+  if (!initialData) {
+    return initialForm;
+  }
+
+  return {
+    title: initialData.title || "",
+    description: initialData.description || "",
+    price: initialData.price ?? "",
+    category: initialData.category || "other",
+    condition: initialData.condition || "good",
+    imageUrls: initialData.imageUrls || [],
+  };
+}
+
+export default function PostMarketplaceModal({ open, onClose, onSubmit, initialData = null, mode = "create" }) {
   const [form, setForm] = useState(initialForm);
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
   const { isAuthenticated } = useAuth();
+  const isEditing = mode === "edit";
+
+  useEffect(() => {
+    if (open) {
+      setForm(buildForm(initialData));
+      setError("");
+    }
+  }, [open, initialData]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -38,7 +62,7 @@ export default function PostMarketplaceModal({ open, onClose, onSubmit }) {
     setTimeout(() => {
       setIsClosing(false);
       setError("");
-      setForm(initialForm);
+      setForm(buildForm(initialData));
       onClose();
     }, 250);
   };
@@ -62,7 +86,7 @@ export default function PostMarketplaceModal({ open, onClose, onSubmit }) {
     if (result && result.success) {
         closeModal();
     } else {
-        setError(result?.message || "Failed to create listing");
+        setError(result?.message || `Failed to ${isEditing ? "update" : "create"} listing`);
     }
     
     setIsLoading(false);
@@ -81,8 +105,8 @@ export default function PostMarketplaceModal({ open, onClose, onSubmit }) {
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl font-bold text-ruin-text">Sell an Item</h2>
-            <p className="mt-1 text-sm text-ruin-muted">List your used items for sale on campus.</p>
+            <h2 className="font-heading text-2xl font-bold text-ruin-text">{isEditing ? "Edit Item" : "Sell an Item"}</h2>
+            <p className="mt-1 text-sm text-ruin-muted">{isEditing ? "Update the listing details." : "List your used items for sale on campus."}</p>
           </div>
           <Button variant="ghost" className="-mr-2 -mt-2" onClick={closeModal} aria-label="Close modal">
             Close
@@ -154,20 +178,21 @@ export default function PostMarketplaceModal({ open, onClose, onSubmit }) {
             </label>
           </div>
 
-          <label className="block">
-            <span className="text-sm font-medium text-ruin-text">Image URL (Optional)</span>
-            <input
-              type="url"
-              value={form.imageUrl}
-              onChange={(e) => updateField("imageUrl", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
-              placeholder="https://example.com/image.jpg"
+          <div className="block">
+            <span className="text-sm font-medium text-ruin-text mb-2 block">Images (Optional, max 5)</span>
+            <ImageUploader
+              maxFiles={5}
+              currentImageUrls={form.imageUrls}
+              deleteEndpoint="marketplace"
+              referenceId={isEditing ? initialData.id : null}
+              onUpload={(urls) => updateField("imageUrls", urls)}
+              onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
             />
-          </label>
+          </div>
         </div>
 
         <Button type="submit" className="mt-7 w-full" disabled={isLoading}>
-          {isLoading ? "Posting..." : "Post Item"}
+          {isLoading ? (isEditing ? "Saving..." : "Posting...") : (isEditing ? "Save Changes" : "Post Item")}
         </Button>
       </form>
     </div>

@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import Button from "../components/ui/Button";
 import ChatButton from "../components/chat/ChatButton";
+import PostRideModal from "../components/rides/PostRideModal";
 import { CircleDot, MapPin, Calendar, Clock, Info } from "lucide-react";
 
 export default function RideDetailPage() {
@@ -18,6 +19,7 @@ export default function RideDetailPage() {
   
   const [isBooking, setIsBooking] = useState(false);
   const [bookingError, setBookingError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchRide = async () => {
     setIsLoading(true);
@@ -88,12 +90,25 @@ export default function RideDetailPage() {
     }
   };
 
+  const handleEditRide = async (data) => {
+    try {
+      const response = await rideService.updateRide(id, data);
+      if (response.success) {
+        await fetchRide();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || "Failed to update ride" };
+    }
+  };
+
   if (isLoading) return <div className="p-8 text-center text-ruin-muted">Loading ride...</div>;
   if (error || !ride) return <div className="p-8 text-center text-ruin-magenta">{error || "Ride not found"}</div>;
 
   const driverId = ride.driverId || ride.poster?.id;
   const driverName = ride.driverFullName || ride.poster?.fullName;
-  const isOwner = user?.id === driverId;
+  const isOwner = user?.id && driverId && String(user.id) === String(driverId);
   const isPassenger = ride.passengers?.some(p => p.id === user?.id);
   const accent = ride.status === "open" ? "#00C9A7" : ride.status === "full" ? "#F26522" : "#A78BFA";
 
@@ -108,6 +123,7 @@ export default function RideDetailPage() {
         </button>
         {isOwner && (
           <div className="flex gap-2">
+            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
             {(ride.status === "open" || ride.status === "full") && (
                 <>
                     <button onClick={() => handleStatusUpdate("completed")} className="text-sm font-medium text-ruin-background bg-[#00C9A7] px-3 py-1 rounded-md">Mark Completed</button>
@@ -279,6 +295,14 @@ export default function RideDetailPage() {
               )}
           </div>
       </div>
+
+      <PostRideModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditRide}
+        initialData={ride}
+        mode="edit"
+      />
     </div>
   );
 }

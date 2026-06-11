@@ -53,6 +53,17 @@ public class GigController {
         return ResponseEntity.ok(ApiResponse.success("Gig details retrieved successfully", response));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<GigResponse>> updateGig(
+            @PathVariable UUID id,
+            @Valid @RequestBody GigCreateRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        GigResponse response = gigService.updateGig(id, request, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Gig updated successfully", response));
+    }
+
     @PostMapping("/{id}/apply")
     public ResponseEntity<ApiResponse<Void>> applyToGig(
             @PathVariable UUID id,
@@ -74,6 +85,17 @@ public class GigController {
         String userEmail = authentication.getName();
         gigService.acceptApplicant(id, applicationId, userEmail);
         return ResponseEntity.ok(ApiResponse.success("Applicant accepted successfully"));
+    }
+
+    @PostMapping("/{id}/applications/{applicationId}/unaccept")
+    public ResponseEntity<ApiResponse<Void>> unacceptApplicant(
+            @PathVariable UUID id,
+            @PathVariable UUID applicationId,
+            Authentication authentication) {
+        
+        String userEmail = authentication.getName();
+        gigService.unacceptApplicant(id, applicationId, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Applicant unaccepted successfully"));
     }
 
     @PatchMapping("/{id}/status")

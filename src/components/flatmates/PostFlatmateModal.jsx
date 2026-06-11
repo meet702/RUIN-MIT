@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import DatePickerField from "../ui/DatePickerField";
+import ImageUploader from "../common/ImageUploader";
 
 const initialForm = {
   title: "",
@@ -11,15 +12,41 @@ const initialForm = {
   availableFrom: "",
   genderPreference: "any",
   amenities: "",
+  imageUrls: [],
 };
 
-export default function PostFlatmateModal({ open, onClose, onSubmit }) {
+function buildForm(initialData) {
+  if (!initialData) {
+    return initialForm;
+  }
+
+  return {
+    title: initialData.title || "",
+    description: initialData.description || "",
+    location: initialData.location || "",
+    rentPerMonth: initialData.rentPerMonth ?? "",
+    availableFrom: initialData.availableFrom || "",
+    genderPreference: initialData.genderPreference || "any",
+    amenities: initialData.amenities || "",
+    imageUrls: initialData.imageUrls || [],
+  };
+}
+
+export default function PostFlatmateModal({ open, onClose, onSubmit, initialData = null, mode = "create" }) {
   const [form, setForm] = useState(initialForm);
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
   const { isAuthenticated } = useAuth();
+  const isEditing = mode === "edit";
+
+  useEffect(() => {
+    if (open) {
+      setForm(buildForm(initialData));
+      setError("");
+    }
+  }, [open, initialData]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -37,7 +64,7 @@ export default function PostFlatmateModal({ open, onClose, onSubmit }) {
     setTimeout(() => {
       setIsClosing(false);
       setError("");
-      setForm(initialForm);
+      setForm(buildForm(initialData));
       onClose();
     }, 250);
   };
@@ -61,7 +88,7 @@ export default function PostFlatmateModal({ open, onClose, onSubmit }) {
     if (result && result.success) {
         closeModal();
     } else {
-        setError(result?.message || "Failed to create listing");
+        setError(result?.message || `Failed to ${isEditing ? "update" : "create"} listing`);
     }
     
     setIsLoading(false);
@@ -80,8 +107,8 @@ export default function PostFlatmateModal({ open, onClose, onSubmit }) {
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl font-bold text-ruin-text">Find a Flatmate</h2>
-            <p className="mt-1 text-sm text-ruin-muted">List your vacant room or flat.</p>
+            <h2 className="font-heading text-2xl font-bold text-ruin-text">{isEditing ? "Edit Listing" : "Find a Flatmate"}</h2>
+            <p className="mt-1 text-sm text-ruin-muted">{isEditing ? "Update the listing details." : "List your vacant room or flat."}</p>
           </div>
           <Button variant="ghost" className="-mr-2 -mt-2" onClick={closeModal} aria-label="Close modal">
             Close
@@ -171,10 +198,22 @@ export default function PostFlatmateModal({ open, onClose, onSubmit }) {
               placeholder="WiFi, AC, Washing Machine"
             />
           </label>
+          
+          <div className="block">
+            <span className="text-sm font-medium text-ruin-text mb-2 block">Images (Optional, max 5)</span>
+            <ImageUploader
+              maxFiles={5}
+              currentImageUrls={form.imageUrls}
+              deleteEndpoint="flatmates"
+              referenceId={isEditing ? initialData.id : null}
+              onUpload={(urls) => updateField("imageUrls", urls)}
+              onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
+            />
+          </div>
         </div>
 
         <Button type="submit" className="mt-7 w-full" disabled={isLoading}>
-          {isLoading ? "Posting..." : "Post Listing"}
+          {isLoading ? (isEditing ? "Saving..." : "Posting...") : (isEditing ? "Save Changes" : "Post Listing")}
         </Button>
       </form>
     </div>

@@ -82,16 +82,6 @@ button {
   overflow: hidden;
 }
 
-.gig-action {
-  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
-}
-
-.gig-action:hover {
-  background-color: var(--accent);
-  border-color: var(--accent);
-  color: #0E0E0E;
-}
-
 @keyframes chip-slide-in {
   from {
     opacity: 0;

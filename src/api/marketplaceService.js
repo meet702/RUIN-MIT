@@ -23,6 +23,11 @@ export const marketplaceService = {
     return response.data;
   },
 
+  updateListing: async (id, listingData) => {
+    const response = await api.put(`/marketplace/${id}`, listingData);
+    return response.data;
+  },
+
   sendInquiry: async (id, message) => {
     const response = await api.post(`/marketplace/${id}/inquire`, { message });
     return response.data;

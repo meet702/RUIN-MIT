@@ -5,7 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import LostFoundCard from "../components/lostfound/LostFoundCard";
 import PostLostFoundModal from "../components/lostfound/PostLostFoundModal";
+import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import { getCurrentUserId } from "../utils/ownership";
 
 export default function LostFoundPage() {
   const [posts, setPosts] = useState([]);
@@ -13,8 +15,9 @@ export default function LostFoundPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const currentUserId = getCurrentUserId(user);
 
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
@@ -95,11 +98,13 @@ export default function LostFoundPage() {
                 No items found.
             </div>
         ) : (
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {posts.map((post, i) => (
-                <LostFoundCard key={post.id} post={post} index={i} />
-              ))}
-            </div>
+            <ListingSections
+              items={posts}
+              currentUserId={currentUserId}
+              renderCard={(post, i, isOwnPost) => (
+                <LostFoundCard key={post.id} post={post} index={i} isOwnPost={isOwnPost} />
+              )}
+            />
         )}
       </div>
 

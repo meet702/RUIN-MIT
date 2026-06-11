@@ -5,7 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import MarketplaceCard from "../components/marketplace/MarketplaceCard";
 import PostMarketplaceModal from "../components/marketplace/PostMarketplaceModal";
+import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import { getCurrentUserId } from "../utils/ownership";
 
 const CATEGORIES = ["All", "books", "electronics", "cycles", "stationery", "clothing", "furniture", "other"];
 
@@ -15,8 +17,9 @@ export default function MarketplacePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const currentUserId = getCurrentUserId(user);
 
   const fetchListings = useCallback(async () => {
     setIsLoading(true);
@@ -96,11 +99,13 @@ export default function MarketplacePage() {
                 No items found in this category.
             </div>
         ) : (
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {listings.map((listing, i) => (
-                <MarketplaceCard key={listing.id} listing={listing} index={i} />
-              ))}
-            </div>
+            <ListingSections
+              items={listings}
+              currentUserId={currentUserId}
+              renderCard={(listing, i, isOwnPost) => (
+                <MarketplaceCard key={listing.id} listing={listing} index={i} isOwnPost={isOwnPost} />
+              )}
+            />
         )}
       </div>
 

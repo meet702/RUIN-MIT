@@ -4,6 +4,7 @@ import { lostFoundService } from "../api/lostFoundService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
+import PostLostFoundModal from "../components/lostfound/PostLostFoundModal";
 import { Search, Info } from "lucide-react";
 
 export default function LostFoundDetailPage() {
@@ -14,6 +15,7 @@ export default function LostFoundDetailPage() {
   const [post, setPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchPost = async () => {
     setIsLoading(true);
@@ -46,6 +48,19 @@ export default function LostFoundDetailPage() {
     }
   };
 
+  const handleEditPost = async (data) => {
+    try {
+      const response = await lostFoundService.updatePost(id, data);
+      if (response.success) {
+        await fetchPost();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || "Failed to update post" };
+    }
+  };
+
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
         try {
@@ -67,6 +82,7 @@ export default function LostFoundDetailPage() {
   const isOwner = user?.id && posterId && String(user.id) === String(posterId);
   const isLost = post.type === "lost";
   const accent = isLost ? "#F26522" : "#00C9A7";
+  const imageUrls = post.imageUrls || post.images?.map((image) => image.imageUrl) || [];
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 font-body">
@@ -76,6 +92,7 @@ export default function LostFoundDetailPage() {
         </button>
         {isOwner && (
           <div className="flex gap-2">
+            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
             {post.status === "open" && (
                 <button onClick={() => handleStatusUpdate("resolved")} className="text-sm font-medium text-ruin-background bg-ruin-orange px-3 py-1 rounded-md">Mark as Resolved</button>
             )}
@@ -85,10 +102,12 @@ export default function LostFoundDetailPage() {
       </div>
 
       <div className="rounded-2xl border border-ruin-border bg-ruin-card overflow-hidden">
-        {post.images && post.images.length > 0 ? (
-            <div className="w-full h-64 md:h-96 bg-black flex items-center justify-center relative overflow-x-auto snap-x">
-                {post.images.map(img => (
-                    <img key={img.id} src={img.imageUrl} alt="Item" className="max-w-full max-h-full object-contain shrink-0 snap-center mx-4" />
+        {imageUrls.length > 0 ? (
+            <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4 border-b border-ruin-border">
+                {imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center block rounded-xl overflow-hidden shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+                        <img src={url} alt={`${post.title} - ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
                 ))}
             </div>
         ) : (
@@ -170,6 +189,14 @@ export default function LostFoundDetailPage() {
             </div>
         </div>
       </div>
+
+      <PostLostFoundModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditPost}
+        initialData={post}
+        mode="edit"
+      />
     </div>
   );
 }

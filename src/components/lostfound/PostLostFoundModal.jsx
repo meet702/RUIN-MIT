@@ -1,22 +1,46 @@
 import { useEffect, useState } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
+import ImageUploader from "../common/ImageUploader";
 
 const initialForm = {
   type: "lost",
   title: "",
   description: "",
   locationFoundLost: "",
-  imageUrls: "",
+  imageUrls: [],
 };
 
-export default function PostLostFoundModal({ open, onClose, onSubmit }) {
+function buildForm(initialData) {
+  if (!initialData) {
+    return initialForm;
+  }
+
+  const urls = initialData.imageUrls || initialData.images?.map((image) => image.imageUrl) || [];
+  return {
+    type: initialData.type || "lost",
+    title: initialData.title || "",
+    description: initialData.description || "",
+    locationFoundLost: initialData.locationFoundLost || "",
+    imageUrls: urls,
+  };
+}
+
+export default function PostLostFoundModal({ open, onClose, onSubmit, initialData = null, mode = "create" }) {
   const [form, setForm] = useState(initialForm);
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
   const { isAuthenticated } = useAuth();
+  const isEditing = mode === "edit";
+
+  useEffect(() => {
+    if (open) {
+      setForm(buildForm(initialData));
+      setError("");
+    }
+  }, [open, initialData]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -34,7 +58,7 @@ export default function PostLostFoundModal({ open, onClose, onSubmit }) {
     setTimeout(() => {
       setIsClosing(false);
       setError("");
-      setForm(initialForm);
+      setForm(buildForm(initialData));
       onClose();
     }, 250);
   };
@@ -51,14 +75,13 @@ export default function PostLostFoundModal({ open, onClose, onSubmit }) {
 
     const formattedData = {
         ...form,
-        imageUrls: form.imageUrls.split(",").map(url => url.trim()).filter(url => url)
     };
 
     const result = await onSubmit(formattedData);
     if (result && result.success) {
         closeModal();
     } else {
-        setError(result?.message || "Failed to create post");
+        setError(result?.message || `Failed to ${isEditing ? "update" : "create"} post`);
     }
     
     setIsLoading(false);
@@ -77,8 +100,8 @@ export default function PostLostFoundModal({ open, onClose, onSubmit }) {
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl font-bold text-ruin-text">Report Lost & Found</h2>
-            <p className="mt-1 text-sm text-ruin-muted">Help reunite items with their owners.</p>
+            <h2 className="font-heading text-2xl font-bold text-ruin-text">{isEditing ? "Edit Lost & Found" : "Report Lost & Found"}</h2>
+            <p className="mt-1 text-sm text-ruin-muted">{isEditing ? "Update the post details." : "Help reunite items with their owners."}</p>
           </div>
           <Button variant="ghost" className="-mr-2 -mt-2" onClick={closeModal} aria-label="Close modal">
             Close
@@ -153,19 +176,21 @@ export default function PostLostFoundModal({ open, onClose, onSubmit }) {
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-ruin-text">Image URLs (comma separated, optional)</span>
-            <input
-              value={form.imageUrls}
-              onChange={(e) => updateField("imageUrls", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
-              placeholder="https://example.com/img1.jpg, https://..."
+          <div className="block">
+            <span className="text-sm font-medium text-ruin-text mb-2 block">Images (Optional, max 5)</span>
+            <ImageUploader
+              maxFiles={5}
+              currentImageUrls={form.imageUrls}
+              deleteEndpoint="lostfound"
+              referenceId={isEditing ? initialData.id : null}
+              onUpload={(urls) => updateField("imageUrls", urls)}
+              onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
             />
-          </label>
+          </div>
         </div>
 
         <Button type="submit" className="mt-7 w-full" disabled={isLoading} style={form.type === "found" ? { backgroundColor: "#00C9A7", color: "#111" } : {}}>
-          {isLoading ? "Posting..." : `Post ${form.type === 'lost' ? 'Lost' : 'Found'} Item`}
+          {isLoading ? (isEditing ? "Saving..." : "Posting...") : (isEditing ? "Save Changes" : `Post ${form.type === 'lost' ? 'Lost' : 'Found'} Item`)}
         </Button>
       </form>
     </div>

@@ -4,6 +4,7 @@ import { flatmateService } from "../api/flatmateService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
+import PostFlatmateModal from "../components/flatmates/PostFlatmateModal";
 
 function getCurrentUserId(user) {
   if (user?.id) {
@@ -35,6 +36,7 @@ export default function FlatmateDetailPage() {
   const [listing, setListing] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const [inquiryMessage, setInquiryMessage] = useState("");
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
@@ -67,6 +69,19 @@ export default function FlatmateDetailPage() {
       }
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const handleEditListing = async (data) => {
+    try {
+      const response = await flatmateService.updateListing(id, data);
+      if (response.success) {
+        await fetchListing();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || "Failed to update listing" };
     }
   };
 
@@ -115,6 +130,7 @@ export default function FlatmateDetailPage() {
         </button>
         {isOwner && (
           <div className="flex gap-2">
+            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
             {listing.status === "open" && (
                 <button onClick={() => handleStatusUpdate("closed")} className="text-sm font-medium text-ruin-background bg-ruin-orange px-3 py-1 rounded-md">Mark as Closed</button>
             )}
@@ -123,8 +139,18 @@ export default function FlatmateDetailPage() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-ruin-border bg-ruin-card overflow-hidden">
+        {listing.imageUrls && listing.imageUrls.length > 0 && (
+            <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4 border-b border-ruin-border">
+                {listing.imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center block rounded-xl overflow-hidden shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+                        <img src={url} alt={`${listing.title} - ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                ))}
+            </div>
+        )}
+        <div className="p-6 sm:p-8">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <span className="inline-flex items-center rounded-full px-3 py-1 font-heading text-[11px] font-semibold tracking-[0.04em] capitalize" style={{ backgroundColor: `${accent}1A`, color: accent }}>
             {listing.status}
           </span>
@@ -216,6 +242,7 @@ export default function FlatmateDetailPage() {
             )}
           </div>
         </div>
+        </div>
       </div>
 
       {isOwner && listing.inquiries && (
@@ -250,6 +277,14 @@ export default function FlatmateDetailPage() {
           )}
         </div>
       )}
+
+      <PostFlatmateModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditListing}
+        initialData={listing}
+        mode="edit"
+      />
     </div>
   );
 }

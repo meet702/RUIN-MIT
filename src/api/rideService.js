@@ -22,6 +22,11 @@ export const rideService = {
     return response.data;
   },
 
+  updateRide: async (id, rideData) => {
+    const response = await api.put(`/rides/${id}`, rideData);
+    return response.data;
+  },
+
   bookRide: async (id) => {
     const response = await api.post(`/rides/${id}/book`);
     return response.data;

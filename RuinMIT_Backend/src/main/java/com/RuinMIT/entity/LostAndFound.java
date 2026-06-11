@@ -49,6 +49,9 @@ public class LostAndFound {
     @Builder.Default
     private List<LostFoundImage> images = new ArrayList<>();
 
+    @Column(name = "image_urls", columnDefinition = "TEXT")
+    private String imageUrls;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -60,5 +63,15 @@ public class LostAndFound {
     public void addImage(LostFoundImage image) {
         images.add(image);
         image.setLostAndFound(this);
+    }
+
+    // Helper methods for comma-separated image URLs
+    public List<String> getImageUrlList() {
+        if (imageUrls == null || imageUrls.isBlank()) return List.of();
+        return java.util.Arrays.asList(imageUrls.split(","));
+    }
+
+    public void setImageUrlList(List<String> urls) {
+        this.imageUrls = (urls == null || urls.isEmpty()) ? null : String.join(",", urls);
     }
 }

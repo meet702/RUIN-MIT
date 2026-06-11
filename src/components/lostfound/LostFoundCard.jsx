@@ -3,13 +3,14 @@ import { Link } from "react-router-dom";
 import Avatar from "../ui/Avatar";
 import { Search, Info } from "lucide-react";
 
-export default function LostFoundCard({ post, index }) {
+export default function LostFoundCard({ post, index, isOwnPost = false }) {
   const isLost = post.type === "lost";
   const accent = isLost ? "#F26522" : "#00C9A7"; // Orange for lost, Green for found
   const [isHovered, setIsHovered] = useState(false);
 
   const postedAt = post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "";
-  const firstImage = post.images && post.images.length > 0 ? post.images[0].imageUrl : null;
+  const firstImage = post.imageUrls?.[0] || (post.images && post.images.length > 0 ? post.images[0].imageUrl : null);
+  const posterName = post.posterFullName || post.poster?.fullName || "User";
 
   return (
     <article
@@ -17,14 +18,23 @@ export default function LostFoundCard({ post, index }) {
       style={{
         animationDelay: `${index * 60}ms`,
         borderColor: isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftColor: isOwnPost ? "#F26522" : isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftWidth: isOwnPost ? "2px" : undefined,
         transform: isHovered ? "translateY(-3px)" : undefined,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
+      <div className="relative h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
           {firstImage ? (
-              <img src={firstImage} alt={post.title} className="w-full h-full object-cover" />
+              <>
+                  <img src={firstImage} alt={post.title} className="w-full h-full object-cover" />
+                  {post.imageUrls && post.imageUrls.length > 1 && (
+                      <div className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                          + {post.imageUrls.length - 1} more
+                      </div>
+                  )}
+              </>
           ) : isLost ? (
               <Search size={48} className="text-ruin-muted/50" />
           ) : (
@@ -59,8 +69,8 @@ export default function LostFoundCard({ post, index }) {
           </p>
 
           <div className="mt-4 flex items-center gap-2 pt-4 border-t border-ruin-border mt-auto">
-            <Avatar name={post.posterFullName} accent={accent} />
-            <p className="text-sm text-ruin-muted line-clamp-1">{post.posterFullName}</p>
+            <Avatar name={posterName} accent={accent} />
+            <p className="text-sm text-ruin-muted line-clamp-1">{posterName}</p>
           </div>
 
           <Link

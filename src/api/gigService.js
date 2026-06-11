@@ -16,6 +16,11 @@ export const gigService = {
     return response.data;
   },
 
+  updateGig: async (id, gigData) => {
+    const response = await api.put(`/gigs/${id}`, gigData);
+    return response.data;
+  },
+
   applyToGig: async (id, message) => {
     const response = await api.post(`/gigs/${id}/apply`, { message });
     return response.data;
@@ -23,6 +28,11 @@ export const gigService = {
 
   acceptApplicant: async (gigId, applicationId) => {
     const response = await api.post(`/gigs/${gigId}/applications/${applicationId}/accept`);
+    return response.data;
+  },
+
+  unacceptApplicant: async (gigId, applicationId) => {
+    const response = await api.post(`/gigs/${gigId}/applications/${applicationId}/unaccept`);
     return response.data;
   },
 

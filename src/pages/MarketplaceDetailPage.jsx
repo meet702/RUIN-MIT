@@ -4,6 +4,7 @@ import { marketplaceService } from "../api/marketplaceService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
+import PostMarketplaceModal from "../components/marketplace/PostMarketplaceModal";
 import { Package } from "lucide-react";
 
 function getCurrentUserId(user) {
@@ -36,6 +37,7 @@ export default function MarketplaceDetailPage() {
   const [listing, setListing] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fetchListing = async () => {
     setIsLoading(true);
@@ -65,6 +67,19 @@ export default function MarketplaceDetailPage() {
       }
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const handleEditListing = async (data) => {
+    try {
+      const response = await marketplaceService.updateListing(id, data);
+      if (response.success) {
+        await fetchListing();
+        return { success: true };
+      }
+      return { success: false, message: response.message };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || "Failed to update listing" };
     }
   };
 
@@ -98,6 +113,7 @@ export default function MarketplaceDetailPage() {
         </button>
         {isOwner && (
           <div className="flex gap-2">
+            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
             {listing.status === "available" && (
                 <button onClick={() => handleStatusUpdate("sold")} className="text-sm font-medium text-ruin-background bg-ruin-orange px-3 py-1 rounded-md">Mark as Sold</button>
             )}
@@ -107,9 +123,13 @@ export default function MarketplaceDetailPage() {
       </div>
 
       <div className="rounded-2xl border border-ruin-border bg-ruin-card overflow-hidden">
-        {listing.imageUrl ? (
-            <div className="w-full h-64 md:h-96 bg-black flex items-center justify-center">
-                <img src={listing.imageUrl} alt={listing.title} className="max-w-full max-h-full object-contain" />
+        {listing.imageUrls && listing.imageUrls.length > 0 ? (
+            <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4">
+                {listing.imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center block rounded-xl overflow-hidden shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+                        <img src={url} alt={`${listing.title} - ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                ))}
             </div>
         ) : (
             <div className="w-full h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
@@ -211,6 +231,14 @@ export default function MarketplaceDetailPage() {
           </div>
         </div>
       )}
+
+      <PostMarketplaceModal
+        open={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditListing}
+        initialData={listing}
+        mode="edit"
+      />
     </div>
   );
 }

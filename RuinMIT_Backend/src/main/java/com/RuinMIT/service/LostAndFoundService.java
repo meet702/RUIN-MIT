@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,7 @@ public class LostAndFoundService {
 
     private final LostAndFoundRepository lostAndFoundRepository;
     private final UserRepository userRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public LostAndFoundResponse createPost(LostAndFoundRequest request, String userEmail) {
@@ -41,15 +43,7 @@ public class LostAndFoundService {
                 .images(new ArrayList<>())
                 .build();
 
-        if (request.getImageUrls() != null) {
-            for (String imageUrl : request.getImageUrls()) {
-                LostFoundImage image = LostFoundImage.builder()
-                        .imageUrl(imageUrl)
-                        .lostAndFound(post)
-                        .build();
-                post.getImages().add(image);
-            }
-        }
+        post.setImageUrlList(request.getImageUrls());
 
         post = lostAndFoundRepository.save(post);
         return mapToResponse(post);
@@ -66,6 +60,25 @@ public class LostAndFoundService {
     public LostAndFoundResponse getPostById(UUID id) {
         LostAndFound post = lostAndFoundRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + id));
+        return mapToResponse(post);
+    }
+
+    @Transactional
+    public LostAndFoundResponse updatePost(UUID id, LostAndFoundRequest request, String userEmail) {
+        LostAndFound post = lostAndFoundRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + id));
+
+        if (!post.getPostedBy().getEmail().equalsIgnoreCase(userEmail)) {
+            throw new UnauthorizedException("Only the poster can edit this post");
+        }
+
+        post.setType(request.getType());
+        post.setTitle(request.getTitle());
+        post.setDescription(request.getDescription());
+        post.setLocationFoundLost(request.getLocationFoundLost());
+        post.setImageUrlList(request.getImageUrls());
+
+        post = lostAndFoundRepository.save(post);
         return mapToResponse(post);
     }
 
@@ -97,7 +110,34 @@ public class LostAndFoundService {
             throw new UnauthorizedException("Only the poster can delete this post");
         }
 
+        // Delete images from Cloudinary BEFORE deleting from DB
+        cloudinaryService.deleteMultipleByUrls(post.getImageUrlList());
+
         lostAndFoundRepository.delete(post);
+    }
+
+    @Transactional
+    public LostAndFoundResponse removeImageFromPost(UUID postId, String imageUrl, String userEmail) {
+        LostAndFound post = lostAndFoundRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found with id: " + postId));
+
+        if (!post.getPostedBy().getEmail().equalsIgnoreCase(userEmail)) {
+            throw new UnauthorizedException("Only the poster can edit this post");
+        }
+
+        List<String> currentUrls = post.getImageUrlList();
+        if (currentUrls != null && currentUrls.contains(imageUrl)) {
+            // Delete from Cloudinary first
+            cloudinaryService.deleteByUrl(imageUrl);
+            
+            // Remove from DB list
+            List<String> newUrls = new java.util.ArrayList<>(currentUrls);
+            newUrls.remove(imageUrl);
+            post.setImageUrlList(newUrls);
+            post = lostAndFoundRepository.save(post);
+        }
+
+        return mapToResponse(post);
     }
 
     private LostAndFoundResponse mapToResponse(LostAndFound post) {
@@ -112,9 +152,7 @@ public class LostAndFoundService {
                         .id(post.getPostedBy().getId())
                         .fullName(post.getPostedBy().getFullName())
                         .build())
-                .imageUrls(post.getImages().stream()
-                        .map(LostFoundImage::getImageUrl)
-                        .collect(Collectors.toList()))
+                .imageUrls(post.getImageUrlList())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();

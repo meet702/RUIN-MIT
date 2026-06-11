@@ -28,6 +28,7 @@ public class FlatmateListingDetailResponse {
     private GenderPreference genderPreference;
     private String amenities;
     private ListingStatus status;
+    private List<String> imageUrls;
     private FlatmateListingResponse.PosterInfo poster;
     private Boolean hasInquired;
     private List<FlatmateInquiryResponse> inquiries; // Null if requester is not the poster

@@ -64,6 +64,17 @@ public class FlatmateController {
         return ResponseEntity.ok(ApiResponse.success("Listing details retrieved successfully", response));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<FlatmateListingResponse>> updateListing(
+            @PathVariable UUID id,
+            @Valid @RequestBody FlatmateListingRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        FlatmateListingResponse response = flatmateService.updateListing(id, request, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Listing updated successfully", response));
+    }
+
     @PostMapping("/{id}/inquire")
     public ResponseEntity<ApiResponse<Void>> sendInquiry(
             @PathVariable UUID id,
@@ -95,5 +106,16 @@ public class FlatmateController {
         String userEmail = authentication.getName();
         flatmateService.deleteListing(id, userEmail);
         return ResponseEntity.ok(ApiResponse.success("Listing deleted successfully"));
+    }
+
+    @DeleteMapping("/{id}/images")
+    public ResponseEntity<ApiResponse<FlatmateListingResponse>> removeImage(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.RuinMIT.dto.ImageDeleteRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        FlatmateListingResponse response = flatmateService.removeImageFromListing(id, request.getImageUrl(), userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Image removed successfully", response));
     }
 }

@@ -5,7 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import FlatmateCard from "../components/flatmates/FlatmateCard";
 import PostFlatmateModal from "../components/flatmates/PostFlatmateModal";
+import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import { getCurrentUserId } from "../utils/ownership";
 
 export default function FlatmatePage() {
   const [listings, setListings] = useState([]);
@@ -13,8 +15,9 @@ export default function FlatmatePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const currentUserId = getCurrentUserId(user);
 
   const fetchListings = useCallback(async () => {
     setIsLoading(true);
@@ -93,11 +96,13 @@ export default function FlatmatePage() {
                 No listings found.
             </div>
         ) : (
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {listings.map((listing, i) => (
-                <FlatmateCard key={listing.id} listing={listing} index={i} />
-              ))}
-            </div>
+            <ListingSections
+              items={listings}
+              currentUserId={currentUserId}
+              renderCard={(listing, i, isOwnPost) => (
+                <FlatmateCard key={listing.id} listing={listing} index={i} isOwnPost={isOwnPost} />
+              )}
+            />
         )}
       </div>
 

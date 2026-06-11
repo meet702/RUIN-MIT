@@ -51,7 +51,7 @@ public class GigService {
 
     public Page<GigResponse> getOpenGigs(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return gigRepository.findByStatus(GigStatus.open, pageRequest)
+        return gigRepository.findByStatusIn(List.of(GigStatus.open, GigStatus.in_progress), pageRequest)
                 .map(this::mapToGigResponse);
     }
 
@@ -70,10 +70,35 @@ public class GigService {
             response.setHasApplied(false);
         } else if (userEmail != null) {
             userRepository.findByEmail(userEmail)
-                    .ifPresent(user -> response.setHasApplied(applicationRepository.existsByGigAndApplicant(gig, user)));
+                    .ifPresent(user -> {
+                        boolean applied = applicationRepository.existsByGigAndApplicant(gig, user);
+                        response.setHasApplied(applied);
+                        if (applied) {
+                            applicationRepository.findByGigAndApplicant(gig, user)
+                                    .ifPresent(app -> response.setApplicationAccepted(app.getIsAccepted()));
+                        }
+                    });
         }
 
         return response;
+    }
+
+    @Transactional
+    public GigResponse updateGig(UUID gigId, GigCreateRequest request, String userEmail) {
+        Gig gig = gigRepository.findById(gigId)
+                .orElseThrow(() -> new ResourceNotFoundException("Gig not found"));
+
+        if (!gig.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the gig poster can edit this gig");
+        }
+
+        gig.setTitle(request.getTitle());
+        gig.setDescription(request.getDescription());
+        gig.setBudget(request.getBudget());
+        gig.setDeadline(request.getDeadline());
+
+        gig = gigRepository.save(gig);
+        return mapToGigResponse(gig);
     }
 
     @Transactional
@@ -149,6 +174,43 @@ public class GigService {
                 title,
                 message,
                 "gig_accepted",
+                gig.getId());
+        notificationService.sendEmailNotification(application.getApplicant().getEmail(), title, message);
+    }
+
+    @Transactional
+    public void unacceptApplicant(UUID gigId, UUID applicationId, String userEmail) {
+        Gig gig = gigRepository.findById(gigId)
+                .orElseThrow(() -> new ResourceNotFoundException("Gig not found"));
+
+        if (!gig.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the gig poster can unaccept an applicant");
+        }
+
+        GigApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+
+        if (!application.getGig().getId().equals(gigId)) {
+            throw new BadRequestException("Application does not belong to this gig");
+        }
+
+        if (!application.getIsAccepted()) {
+            throw new BadRequestException("Application is not currently accepted");
+        }
+
+        application.setIsAccepted(false);
+        applicationRepository.save(application);
+
+        gig.setStatus(GigStatus.open);
+        gigRepository.save(gig);
+
+        String title = "Application Revoked";
+        String message = "Your acceptance for \"" + gig.getTitle() + "\" has been revoked by the poster.";
+        notificationService.createNotification(
+                application.getApplicant().getId(),
+                title,
+                message,
+                "gig_unaccepted",
                 gig.getId());
         notificationService.sendEmailNotification(application.getApplicant().getEmail(), title, message);
     }

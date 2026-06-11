@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Avatar from "../ui/Avatar";
 import { Package } from "lucide-react";
 
-export default function MarketplaceCard({ listing, index }) {
+export default function MarketplaceCard({ listing, index, isOwnPost = false }) {
   const accent = listing.status === "available" ? "#00C9A7" : "#FF2D6F";
   const [isHovered, setIsHovered] = useState(false);
 
@@ -15,14 +15,23 @@ export default function MarketplaceCard({ listing, index }) {
       style={{
         animationDelay: `${index * 60}ms`,
         borderColor: isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftColor: isOwnPost ? "#F26522" : isHovered ? `${accent}4D` : "#2A2A2A",
+        borderLeftWidth: isOwnPost ? "2px" : undefined,
         transform: isHovered ? "translateY(-3px)" : undefined,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
-          {listing.imageUrl ? (
-              <img src={listing.imageUrl} alt={listing.title} className="w-full h-full object-cover" />
+      <div className="relative h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
+          {listing.imageUrls && listing.imageUrls.length > 0 ? (
+              <>
+                  <img src={listing.imageUrls[0]} alt={listing.title} className="w-full h-full object-cover" />
+                  {listing.imageUrls.length > 1 && (
+                      <div className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                          1 / {listing.imageUrls.length} 📷
+                      </div>
+                  )}
+              </>
           ) : (
               <Package size={48} className="text-ruin-muted/50" />
           )}
