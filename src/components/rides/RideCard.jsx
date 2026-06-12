@@ -12,7 +12,7 @@ function formatFare(value) {
 export default function RideCard({ ride, index, isOwnPost = false, currentUser = null }) {
   const accent = ride.status === "open" ? "#00C9A7" : ride.status === "full" ? "#F26522" : "#A78BFA";
   const [isHovered, setIsHovered] = useState(false);
-  const isCoPassenger = ride.vehicleType === "auto";
+  const isCoPassenger = ride.vehicleType === "auto" || ride.vehicleType === "cab";
   const posterName =
     (isOwnPost && currentUser?.fullName) ||
     ride.driverFullName ||
@@ -66,7 +66,7 @@ export default function RideCard({ ride, index, isOwnPost = false, currentUser =
         </span>
         <div className="flex items-center gap-1.5 rounded border border-ruin-border bg-ruin-background px-2 py-1 text-xs font-medium text-ruin-muted">
           {getVehicleIcon()}
-          <span className="capitalize">{isCoPassenger ? "Auto" : ride.vehicleType}</span>
+          <span className="capitalize">{ride.vehicleType}</span>
         </div>
       </div>
 
