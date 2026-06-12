@@ -9,7 +9,7 @@ import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
 import { getCurrentUserId } from "../utils/ownership";
 
-const VEHICLE_TYPES = ["All", "auto", "car", "bike", "other"];
+const VEHICLE_TYPES = ["All", "auto", "cab", "car", "bike", "other"];
 
 export default function RidesPage() {
   const [rides, setRides] = useState([]);
