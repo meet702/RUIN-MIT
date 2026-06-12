@@ -139,8 +139,18 @@ export default function FlatmateDetailPage() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-ruin-border bg-ruin-card overflow-hidden">
+        {listing.imageUrls && listing.imageUrls.length > 0 && (
+            <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4 border-b border-ruin-border">
+                {listing.imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center block rounded-xl overflow-hidden shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+                        <img src={url} alt={`${listing.title} - ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                ))}
+            </div>
+        )}
+        <div className="p-6 sm:p-8">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <span className="inline-flex items-center rounded-full px-3 py-1 font-heading text-[11px] font-semibold tracking-[0.04em] capitalize" style={{ backgroundColor: `${accent}1A`, color: accent }}>
             {listing.status}
           </span>
@@ -231,6 +241,7 @@ export default function FlatmateDetailPage() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
 

@@ -62,13 +62,6 @@ const playNotificationSound = () => {
   }
 };
 
-const getNotificationConversationId = (notification) => (
-  notification?.conversationId
-  ?? notification?.data?.conversationId
-  ?? notification?.metadata?.conversationId
-  ?? (notification?.referenceType === "chat" ? notification?.referenceId : null)
-);
-
 const normalize = (value) => String(value ?? "").trim().toLowerCase();
 
 const isMessageNotification = (notification) => {
@@ -79,6 +72,14 @@ const isMessageNotification = (notification) => {
     || type.includes("message")
     || title.startsWith("new message from");
 };
+
+const getNotificationConversationId = (notification) => (
+  notification?.conversationId
+  ?? notification?.data?.conversationId
+  ?? notification?.metadata?.conversationId
+  ?? (isMessageNotification(notification) ? notification?.referenceId : null)
+  ?? (notification?.referenceType === "chat" ? notification?.referenceId : null)
+);
 
 const isNotificationForRecentActiveMessage = (notification, recentMessages) => {
   const title = normalize(notification?.title);
@@ -109,7 +110,7 @@ const isNotificationForActiveChat = (notification, chatState, recentMessages) =>
 };
 
 export default function NotificationBell() {
-  const { activeConversationId, isChatOpen } = useChat();
+  const { activeConversationId, isChatOpen, openConversation } = useChat();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -274,21 +275,29 @@ export default function NotificationBell() {
   }, []);
 
   const handleNotificationClick = async (notification) => {
-    if (notification.isRead) return;
+    if (!notification.isRead) {
+      try {
+        const updatedNotification = await notificationService.markAsRead(notification.id);
+        setNotifications((current) =>
+          current.map((item) =>
+            item.id === notification.id
+              ? { ...item, isRead: updatedNotification?.isRead ?? true }
+              : item
+          )
+        );
+        setUnreadCount((count) => Math.max(0, count - 1));
+      } catch (err) {
+        console.error("Failed to mark notification as read", err);
+        setError("Unable to update notification.");
+      }
+    }
 
-    try {
-      const updatedNotification = await notificationService.markAsRead(notification.id);
-      setNotifications((current) =>
-        current.map((item) =>
-          item.id === notification.id
-            ? { ...item, isRead: updatedNotification?.isRead ?? true }
-            : item
-        )
-      );
-      setUnreadCount((count) => Math.max(0, count - 1));
-    } catch (err) {
-      console.error("Failed to mark notification as read", err);
-      setError("Unable to update notification.");
+    if (isMessageNotification(notification)) {
+      const convId = getNotificationConversationId(notification);
+      if (convId) {
+        openConversation(convId);
+        setIsOpen(false);
+      }
     }
   };
 
@@ -300,6 +309,36 @@ export default function NotificationBell() {
     } catch (err) {
       console.error("Failed to mark all notifications as read", err);
       setError("Unable to update notifications.");
+    }
+  };
+
+  const handleToastClick = async () => {
+    if (!toastNotification) return;
+
+    const notification = toastNotification;
+    setToastNotification(null);
+
+    if (!notification.isRead) {
+      try {
+        const updatedNotification = await notificationService.markAsRead(notification.id);
+        setNotifications((current) =>
+          current.map((item) =>
+            item.id === notification.id
+              ? { ...item, isRead: updatedNotification?.isRead ?? true }
+              : item
+          )
+        );
+        setUnreadCount((count) => Math.max(0, count - 1));
+      } catch (err) {
+        console.error("Failed to mark notification as read", err);
+      }
+    }
+
+    if (isMessageNotification(notification)) {
+      const convId = getNotificationConversationId(notification);
+      if (convId) {
+        openConversation(convId);
+      }
     }
   };
 
@@ -364,7 +403,10 @@ export default function NotificationBell() {
         </div>
       )}
       {toastNotification && createPortal(
-        <div className="fixed bottom-6 right-6 z-[100] w-80 rounded-xl border border-ruin-border bg-ruin-card shadow-2xl p-4 transition-all duration-300">
+        <div 
+          onClick={handleToastClick}
+          className="fixed bottom-6 right-6 z-[100] w-80 rounded-xl border border-ruin-border bg-ruin-card shadow-2xl p-4 transition-all duration-300 cursor-pointer hover:bg-ruin-background/80"
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <h3 className="font-heading text-sm font-semibold text-ruin-text">
@@ -376,7 +418,10 @@ export default function NotificationBell() {
             </div>
             <button
               type="button"
-              onClick={() => setToastNotification(null)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setToastNotification(null);
+              }}
               className="shrink-0 text-ruin-muted transition-colors hover:text-ruin-text"
               aria-label="Close notification"
             >

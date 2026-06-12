@@ -7,10 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface GigApplicationRepository extends JpaRepository<GigApplication, UUID> {
     boolean existsByGigAndApplicant(Gig gig, User applicant);
+    Optional<GigApplication> findByGigAndApplicant(Gig gig, User applicant);
     List<GigApplication> findByGig(Gig gig);
 }

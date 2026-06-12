@@ -123,9 +123,13 @@ export default function MarketplaceDetailPage() {
       </div>
 
       <div className="rounded-2xl border border-ruin-border bg-ruin-card overflow-hidden">
-        {listing.imageUrl ? (
-            <div className="w-full h-64 md:h-96 bg-black flex items-center justify-center">
-                <img src={listing.imageUrl} alt={listing.title} className="max-w-full max-h-full object-contain" />
+        {listing.imageUrls && listing.imageUrls.length > 0 ? (
+            <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4">
+                {listing.imageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center block rounded-xl overflow-hidden shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+                        <img src={url} alt={`${listing.title} - ${i + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                ))}
             </div>
         ) : (
             <div className="w-full h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">

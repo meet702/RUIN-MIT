@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
+import ImageUploader from "../common/ImageUploader";
 
 const CATEGORIES = ["books", "electronics", "cycles", "stationery", "clothing", "furniture", "other"];
 const CONDITIONS = ["new", "like_new", "good", "fair"];
@@ -11,7 +12,7 @@ const initialForm = {
   price: "",
   category: "other",
   condition: "good",
-  imageUrl: "",
+  imageUrls: [],
 };
 
 function buildForm(initialData) {
@@ -25,7 +26,7 @@ function buildForm(initialData) {
     price: initialData.price ?? "",
     category: initialData.category || "other",
     condition: initialData.condition || "good",
-    imageUrl: initialData.imageUrl || "",
+    imageUrls: initialData.imageUrls || [],
   };
 }
 
@@ -177,16 +178,17 @@ export default function PostMarketplaceModal({ open, onClose, onSubmit, initialD
             </label>
           </div>
 
-          <label className="block">
-            <span className="text-sm font-medium text-ruin-text">Image URL (Optional)</span>
-            <input
-              type="url"
-              value={form.imageUrl}
-              onChange={(e) => updateField("imageUrl", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
-              placeholder="https://example.com/image.jpg"
+          <div className="block">
+            <span className="text-sm font-medium text-ruin-text mb-2 block">Images (Optional, max 5)</span>
+            <ImageUploader
+              maxFiles={5}
+              currentImageUrls={form.imageUrls}
+              deleteEndpoint="marketplace"
+              referenceId={isEditing ? initialData.id : null}
+              onUpload={(urls) => updateField("imageUrls", urls)}
+              onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
             />
-          </label>
+          </div>
         </div>
 
         <Button type="submit" className="mt-7 w-full" disabled={isLoading}>

@@ -25,9 +25,16 @@ export default function LostFoundCard({ post, index, isOwnPost = false }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
+      <div className="relative h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
           {firstImage ? (
-              <img src={firstImage} alt={post.title} className="w-full h-full object-cover" />
+              <>
+                  <img src={firstImage} alt={post.title} className="w-full h-full object-cover" />
+                  {post.imageUrls && post.imageUrls.length > 1 && (
+                      <div className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                          + {post.imageUrls.length - 1} more
+                      </div>
+                  )}
+              </>
           ) : isLost ? (
               <Search size={48} className="text-ruin-muted/50" />
           ) : (

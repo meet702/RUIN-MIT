@@ -26,7 +26,7 @@ public class MarketplaceListingDetailResponse {
     private MarketplaceCategory category;
     private ItemCondition condition;
     private MarketplaceStatus status;
-    private String imageUrl;
+    private List<String> imageUrls;
     private MarketplaceListingResponse.PosterInfo poster;
     private Boolean hasInquired;
     private List<MarketplaceInquiryResponse> inquiries; // Null if requester is not the poster

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -27,6 +28,7 @@ public class FlatmateListingResponse {
     private GenderPreference genderPreference;
     private String amenities;
     private ListingStatus status;
+    private List<String> imageUrls;
     private PosterInfo poster;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

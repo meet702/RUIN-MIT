@@ -7,6 +7,7 @@ import GigBadge from "../components/gigs/GigBadge";
 import Button from "../components/ui/Button";
 import ChatButton from "../components/chat/ChatButton";
 import PostGigModal from "../components/gigs/PostGigModal";
+import { getCurrentUserId, isOwnPost } from "../utils/ownership";
 
 export default function GigDetailPage() {
   const { id } = useParams();
@@ -17,7 +18,7 @@ export default function GigDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   
-  const [applicationMessage, setApplicationMessage] = useState("");
+
   const [isApplying, setIsApplying] = useState(false);
   const [applyError, setApplyError] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -42,8 +43,7 @@ export default function GigDetailPage() {
     fetchGig();
   }, [id]);
 
-  const handleApply = async (e) => {
-    e.preventDefault();
+  const handleApply = async () => {
     if (!isAuthenticated) {
       navigate("/login", { state: { from: { pathname: `/gigs/${id}` } } });
       return;
@@ -53,9 +53,8 @@ export default function GigDetailPage() {
     setApplyError("");
 
     try {
-      const response = await gigService.applyToGig(id, applicationMessage);
+      const response = await gigService.applyToGig(id, "I am interested in this gig.");
       if (response.success) {
-        setApplicationMessage("");
         await fetchGig(); // Refresh to potentially show application
       } else {
         setApplyError(response.message || "Failed to apply");
@@ -102,6 +101,17 @@ export default function GigDetailPage() {
     }
   };
 
+  const handleUnacceptApplicant = async (appId) => {
+    try {
+      const response = await gigService.unacceptApplicant(id, appId);
+      if (response.success) {
+        await fetchGig();
+      }
+    } catch (err) {
+      console.error("Failed to unaccept applicant", err);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center text-ruin-muted">Loading gig...</div>;
   }
@@ -110,7 +120,8 @@ export default function GigDetailPage() {
     return <div className="p-8 text-center text-ruin-magenta">{error || "Gig not found"}</div>;
   }
 
-  const isPoster = user?.id && gig.posterId && String(user.id) === String(gig.posterId);
+  const currentUserId = getCurrentUserId(user);
+  const isPoster = isOwnPost(gig, currentUserId);
   const formattedDeadline = gig.deadline ? new Date(gig.deadline).toLocaleDateString() : "Flexible";
   const postedAt = gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : "";
 
@@ -170,32 +181,31 @@ export default function GigDetailPage() {
               <p className="mt-1 text-ruin-text">{formattedDeadline}</p>
             </div>
 
-            {!isPoster && gig.status === "open" && (
+            {!isPoster && gig.status === "open" && !gig.hasApplied && (
               <div className="pt-4 border-t border-ruin-border">
                 {applyError && <p className="mb-2 text-sm text-ruin-magenta">{applyError}</p>}
-                <form onSubmit={handleApply} className="space-y-3">
-                  <textarea
-                    value={applicationMessage}
-                    onChange={(e) => setApplicationMessage(e.target.value)}
-                    placeholder="Why are you a good fit?"
-                    className="w-full rounded-lg border border-ruin-border bg-ruin-card p-3 text-sm text-ruin-text outline-none focus:border-ruin-orange min-h-[80px]"
-                    required
-                  />
-                  <Button type="submit" className="w-full" disabled={isApplying}>
-                    {isApplying ? "Applying..." : "Apply Now"}
-                  </Button>
-                </form>
+                <Button className="w-full" disabled={isApplying} onClick={handleApply}>
+                  {isApplying ? "Sending..." : "I am Interested"}
+                </Button>
               </div>
-            )}
-            
-            {!isPoster && gig.status !== "open" && (
-                <div className="pt-4 border-t border-ruin-border text-center text-ruin-muted">
-                    This gig is no longer accepting applications.
-                </div>
             )}
 
             {!isPoster && gig.hasApplied && (
-              <div className="pt-4 border-t border-ruin-border">
+              <div className="pt-4 border-t border-ruin-border space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-ruin-muted">Your Application</span>
+                  {gig.applicationAccepted ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-[#00C9A7]/15 text-[#00C9A7] px-3 py-1 rounded-full border border-[#00C9A7]/30">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      Accepted
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-ruin-orange/15 text-ruin-orange px-3 py-1 rounded-full border border-ruin-orange/30">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth={2} /><path strokeLinecap="round" strokeWidth={2} d="M12 6v6l4 2" /></svg>
+                      Pending
+                    </span>
+                  )}
+                </div>
                 <ChatButton
                   otherUserId={gig.posterId}
                   otherUserName={gig.posterFullName}
@@ -225,7 +235,15 @@ export default function GigDetailPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {app.isAccepted && (
+                        <>
                           <span className="text-xs font-semibold text-ruin-background bg-[#00C9A7] px-2 py-1 rounded">ACCEPTED</span>
+                          <button 
+                              onClick={() => handleUnacceptApplicant(app.id)}
+                              className="text-xs font-semibold text-ruin-magenta border border-ruin-magenta hover:bg-ruin-magenta/10 px-3 py-1 rounded transition-colors"
+                          >
+                              Unaccept
+                          </button>
+                        </>
                       )}
                       {!app.isAccepted && gig.status === "open" && (
                         <button 

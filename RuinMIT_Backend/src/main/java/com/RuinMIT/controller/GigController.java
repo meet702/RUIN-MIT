@@ -87,6 +87,17 @@ public class GigController {
         return ResponseEntity.ok(ApiResponse.success("Applicant accepted successfully"));
     }
 
+    @PostMapping("/{id}/applications/{applicationId}/unaccept")
+    public ResponseEntity<ApiResponse<Void>> unacceptApplicant(
+            @PathVariable UUID id,
+            @PathVariable UUID applicationId,
+            Authentication authentication) {
+        
+        String userEmail = authentication.getName();
+        gigService.unacceptApplicant(id, applicationId, userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Applicant unaccepted successfully"));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> updateGigStatus(
             @PathVariable UUID id,

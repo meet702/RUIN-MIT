@@ -27,6 +27,7 @@ public class FlatmateService {
     private final FlatmateInquiryRepository inquiryRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public FlatmateListingResponse createListing(FlatmateListingRequest request, String userEmail) {
@@ -44,6 +45,8 @@ public class FlatmateService {
                 .amenities(request.getAmenities())
                 .status(ListingStatus.open)
                 .build();
+
+        listing.setImageUrlList(request.getImageUrls());
 
         listing = listingRepository.save(listing);
         return mapToListingResponse(listing);
@@ -102,6 +105,7 @@ public class FlatmateService {
         listing.setAvailableFrom(request.getAvailableFrom());
         listing.setGenderPreference(request.getGenderPreference());
         listing.setAmenities(request.getAmenities());
+        listing.setImageUrlList(request.getImageUrls());
 
         listing = listingRepository.save(listing);
         return mapToListingResponse(listing);
@@ -175,7 +179,34 @@ public class FlatmateService {
             throw new UnauthorizedException("Only the poster can delete this listing");
         }
 
+        // Delete images from Cloudinary BEFORE deleting from DB
+        cloudinaryService.deleteMultipleByUrls(listing.getImageUrlList());
+
         listingRepository.delete(listing); // This will cascade and delete associated inquiries
+    }
+
+    @Transactional
+    public FlatmateListingResponse removeImageFromListing(UUID listingId, String imageUrl, String userEmail) {
+        FlatmateListing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
+
+        if (!listing.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the poster can edit this listing");
+        }
+
+        List<String> currentUrls = listing.getImageUrlList();
+        if (currentUrls != null && currentUrls.contains(imageUrl)) {
+            // Delete from Cloudinary first
+            cloudinaryService.deleteByUrl(imageUrl);
+            
+            // Remove from DB list
+            List<String> newUrls = new java.util.ArrayList<>(currentUrls);
+            newUrls.remove(imageUrl);
+            listing.setImageUrlList(newUrls);
+            listing = listingRepository.save(listing);
+        }
+
+        return mapToListingResponse(listing);
     }
 
     // --- Mappers ---
@@ -191,6 +222,7 @@ public class FlatmateService {
                 .genderPreference(listing.getGenderPreference())
                 .amenities(listing.getAmenities())
                 .status(listing.getStatus())
+                .imageUrls(listing.getImageUrlList())
                 .poster(FlatmateListingResponse.PosterInfo.builder()
                         .id(listing.getPostedBy().getId())
                         .fullName(listing.getPostedBy().getFullName())
@@ -211,7 +243,8 @@ public class FlatmateService {
                 .genderPreference(listing.getGenderPreference())
                 .amenities(listing.getAmenities())
                 .status(listing.getStatus())
-                .poster(FlatmateListingResponse.PosterInfo.builder() // reuse PosterInfo structure
+                .imageUrls(listing.getImageUrlList())
+                .poster(FlatmateListingResponse.PosterInfo.builder()
                         .id(listing.getPostedBy().getId())
                         .fullName(listing.getPostedBy().getFullName())
                         .build())

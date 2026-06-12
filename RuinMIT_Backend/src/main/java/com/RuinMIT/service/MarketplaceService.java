@@ -27,6 +27,7 @@ public class MarketplaceService {
     private final MarketplaceInquiryRepository inquiryRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public MarketplaceListingResponse createListing(MarketplaceListingRequest request, String userEmail) {
@@ -40,9 +41,10 @@ public class MarketplaceService {
                 .price(request.getPrice())
                 .category(request.getCategory())
                 .condition(request.getCondition())
-                .imageUrl(request.getImageUrl())
                 .status(MarketplaceStatus.available)
                 .build();
+
+        listing.setImageUrlList(request.getImageUrls());
 
         listing = listingRepository.save(listing);
         return mapToListingResponse(listing);
@@ -100,7 +102,7 @@ public class MarketplaceService {
         listing.setPrice(request.getPrice());
         listing.setCategory(request.getCategory());
         listing.setCondition(request.getCondition());
-        listing.setImageUrl(request.getImageUrl());
+        listing.setImageUrlList(request.getImageUrls());
 
         listing = listingRepository.save(listing);
         return mapToListingResponse(listing);
@@ -174,7 +176,34 @@ public class MarketplaceService {
             throw new UnauthorizedException("Only the poster can delete this listing");
         }
 
+        // Delete images from Cloudinary BEFORE deleting from DB
+        cloudinaryService.deleteMultipleByUrls(listing.getImageUrlList());
+
         listingRepository.delete(listing); // This will cascade and delete associated inquiries
+    }
+
+    @Transactional
+    public MarketplaceListingResponse removeImageFromListing(UUID listingId, String imageUrl, String userEmail) {
+        MarketplaceListing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));
+
+        if (!listing.getPostedBy().getEmail().equals(userEmail)) {
+            throw new UnauthorizedException("Only the poster can edit this listing");
+        }
+
+        List<String> currentUrls = listing.getImageUrlList();
+        if (currentUrls != null && currentUrls.contains(imageUrl)) {
+            // Delete from Cloudinary first
+            cloudinaryService.deleteByUrl(imageUrl);
+            
+            // Remove from DB list
+            List<String> newUrls = new java.util.ArrayList<>(currentUrls);
+            newUrls.remove(imageUrl);
+            listing.setImageUrlList(newUrls);
+            listing = listingRepository.save(listing);
+        }
+
+        return mapToListingResponse(listing);
     }
 
     // --- Mappers ---
@@ -187,7 +216,7 @@ public class MarketplaceService {
                 .price(listing.getPrice())
                 .category(listing.getCategory())
                 .condition(listing.getCondition())
-                .imageUrl(listing.getImageUrl())
+                .imageUrls(listing.getImageUrlList())
                 .status(listing.getStatus())
                 .poster(MarketplaceListingResponse.PosterInfo.builder()
                         .id(listing.getPostedBy().getId())
@@ -206,9 +235,9 @@ public class MarketplaceService {
                 .price(listing.getPrice())
                 .category(listing.getCategory())
                 .condition(listing.getCondition())
-                .imageUrl(listing.getImageUrl())
+                .imageUrls(listing.getImageUrlList())
                 .status(listing.getStatus())
-                .poster(MarketplaceListingResponse.PosterInfo.builder() // reuse PosterInfo structure
+                .poster(MarketplaceListingResponse.PosterInfo.builder()
                         .id(listing.getPostedBy().getId())
                         .fullName(listing.getPostedBy().getFullName())
                         .build())

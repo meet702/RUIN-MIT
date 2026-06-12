@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,6 +56,9 @@ public class FlatmateListing {
     @Builder.Default
     private ListingStatus status = ListingStatus.open;
 
+    @Column(name = "image_urls", columnDefinition = "TEXT")
+    private String imageUrls;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -65,4 +69,14 @@ public class FlatmateListing {
 
     @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FlatmateInquiry> inquiries;
+
+    // Helper methods for comma-separated image URLs
+    public List<String> getImageUrlList() {
+        if (imageUrls == null || imageUrls.isBlank()) return List.of();
+        return Arrays.asList(imageUrls.split(","));
+    }
+
+    public void setImageUrlList(List<String> urls) {
+        this.imageUrls = (urls == null || urls.isEmpty()) ? null : String.join(",", urls);
+    }
 }

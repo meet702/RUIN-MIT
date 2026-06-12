@@ -7,6 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,8 +50,8 @@ public class MarketplaceListing {
     @Builder.Default
     private MarketplaceStatus status = MarketplaceStatus.available;
 
-    @Column(name = "image_url", columnDefinition = "TEXT")
-    private String imageUrl;
+    @Column(name = "image_urls", columnDefinition = "TEXT")
+    private String imageUrls;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -62,4 +63,14 @@ public class MarketplaceListing {
 
     @OneToMany(mappedBy = "listing", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MarketplaceInquiry> inquiries;
+
+    // Helper methods for comma-separated image URLs
+    public List<String> getImageUrlList() {
+        if (imageUrls == null || imageUrls.isBlank()) return List.of();
+        return Arrays.asList(imageUrls.split(","));
+    }
+
+    public void setImageUrlList(List<String> urls) {
+        this.imageUrls = (urls == null || urls.isEmpty()) ? null : String.join(",", urls);
+    }
 }
