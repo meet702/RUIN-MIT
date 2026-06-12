@@ -6,7 +6,17 @@ import TimePickerField from "../ui/TimePickerField";
 
 const OFFER_VEHICLES = ["bike", "car"];
 const CAR_SEATS = ["1", "2", "3"];
+const CO_PASSENGER_VEHICLES = ["auto", "cab"];
 const AUTO_SEATS = ["1", "2"];
+const CAB_SEATS = ["1", "2", "3", "4", "5"];
+
+function isCoPassengerVehicle(vehicleType) {
+  return CO_PASSENGER_VEHICLES.includes(vehicleType);
+}
+
+function getCoPassengerSeats(vehicleType) {
+  return vehicleType === "cab" ? CAB_SEATS : AUTO_SEATS;
+}
 
 const initialForm = {
   rideMode: "offer",
@@ -57,7 +67,7 @@ function buildForm(initialData) {
   }
 
   const departure = toDateTimeParts(initialData.departureTime);
-  const isCoPassenger = initialData.vehicleType === "auto";
+  const isCoPassenger = isCoPassengerVehicle(initialData.vehicleType);
   const storedSeats = String(initialData.totalSeats ?? "1");
   const storedFare = initialData.farePerPerson ?? "";
   const estimatedTotalFare =
@@ -67,7 +77,7 @@ function buildForm(initialData) {
 
   return {
     rideMode: isCoPassenger ? "coPassenger" : "offer",
-    vehicleType: isCoPassenger ? "auto" : initialData.vehicleType || "bike",
+    vehicleType: isCoPassenger ? initialData.vehicleType : initialData.vehicleType || "bike",
     fromLocation: initialData.fromLocation || "",
     toLocation: initialData.toLocation || "",
     departureDate: departure.date,
@@ -146,7 +156,8 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "vehicleType") {
-        next.totalSeats = value === "bike" ? "1" : CAR_SEATS.includes(String(prev.totalSeats)) ? String(prev.totalSeats) : "1";
+        const allowedSeats = prev.rideMode === "coPassenger" ? getCoPassengerSeats(value) : value === "bike" ? ["1"] : CAR_SEATS;
+        next.totalSeats = allowedSeats.includes(String(prev.totalSeats)) ? String(prev.totalSeats) : "1";
       }
       return next;
     });
@@ -160,7 +171,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
     setForm((prev) => ({
       ...prev,
       rideMode,
-      vehicleType: rideMode === "coPassenger" ? "auto" : prev.vehicleType === "car" ? "car" : "bike",
+      vehicleType: rideMode === "coPassenger" ? (isCoPassengerVehicle(prev.vehicleType) ? prev.vehicleType : "auto") : prev.vehicleType === "car" ? "car" : "bike",
       totalSeats: "1",
       farePerPerson: rideMode === "coPassenger" ? "" : prev.farePerPerson,
       estimatedTotalFare: rideMode === "coPassenger" ? prev.estimatedTotalFare : "",
@@ -202,8 +213,11 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
     }
 
     if (isCoPassengerMode) {
-      if (!AUTO_SEATS.includes(String(form.totalSeats))) {
-        nextErrors.totalSeats = "Choose 1 or 2 co-passengers.";
+      if (!CO_PASSENGER_VEHICLES.includes(form.vehicleType)) {
+        nextErrors.vehicleType = "Choose auto or cab.";
+      }
+      if (!getCoPassengerSeats(form.vehicleType).includes(String(form.totalSeats))) {
+        nextErrors.totalSeats = form.vehicleType === "cab" ? "Choose 1 to 5 co-passengers." : "Choose 1 or 2 co-passengers.";
       }
       if (!form.estimatedTotalFare) {
         nextErrors.estimatedTotalFare = "Estimated total fare is required.";
@@ -252,7 +266,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
       : Number(form.farePerPerson);
     const formattedData = {
       ...rideFields,
-      vehicleType: isCoPassengerMode ? "auto" : form.vehicleType,
+      vehicleType: form.vehicleType,
       fromLocation: form.fromLocation.trim(),
       toLocation: form.toLocation.trim(),
       departureTime: `${departureDate}T${departureTime}`,
@@ -306,7 +320,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
                 : "border-ruin-border bg-transparent text-ruin-muted hover:text-ruin-text"
             }`}
           >
-            <span className="block font-heading text-sm font-bold">🛵 Offering a Ride</span>
+            <span className="block font-heading text-sm font-bold">Offering a Ride</span>
             <span className="mt-1 block text-xs leading-snug opacity-90">I'm going somewhere on my bike/car and can take someone</span>
           </button>
           <button
@@ -318,8 +332,8 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
                 : "border-ruin-border bg-transparent text-ruin-muted hover:text-ruin-text"
             }`}
           >
-            <span className="block font-heading text-sm font-bold">🛺 Looking for Co-passenger</span>
-            <span className="mt-1 block text-xs leading-snug opacity-90">I'm taking an auto and want to split the cost</span>
+            <span className="block font-heading text-sm font-bold">Looking for Co-passenger</span>
+            <span className="mt-1 block text-xs leading-snug opacity-90">I'm booking a ride and want to split the cost</span>
           </button>
         </div>
 
@@ -421,9 +435,25 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
           ) : (
             <>
               <div>
+                <span className="text-sm font-medium text-ruin-text">Vehicle</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CO_PASSENGER_VEHICLES.map((vehicle) => (
+                    <Chip
+                      key={vehicle}
+                      active={form.vehicleType === vehicle}
+                      onClick={() => updateField("vehicleType", vehicle)}
+                    >
+                      {vehicle === "auto" ? "Auto" : "Cab"}
+                    </Chip>
+                  ))}
+                </div>
+                <FieldError message={fieldErrors.vehicleType} />
+              </div>
+
+              <div>
                 <span className="text-sm font-medium text-ruin-text">Total Seats Needed</span>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {AUTO_SEATS.map((seat) => (
+                  {getCoPassengerSeats(form.vehicleType).map((seat) => (
                     <Chip
                       key={seat}
                       active={form.totalSeats === seat}
