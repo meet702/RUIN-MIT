@@ -179,7 +179,7 @@ export default function ImageUploader({
               <img
                 src={url}
                 alt={`Upload ${index + 1}`}
-                className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
+                className="h-full w-full object-contain transition-opacity group-hover:opacity-80"
               />
               <button
                 type="button"

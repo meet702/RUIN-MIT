@@ -25,7 +25,7 @@ export default function FlatmateCard({ listing, index, isOwnPost = false }) {
       <div className="relative h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
           {listing.imageUrls && listing.imageUrls.length > 0 ? (
               <>
-                  <img src={listing.imageUrls[0]} alt={listing.title} className="w-full h-full object-cover" />
+                  <img src={listing.imageUrls[0]} alt={listing.title} className="h-full w-full object-contain" />
                   {listing.imageUrls.length > 1 && (
                       <div className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
                           1 / {listing.imageUrls.length} 📷

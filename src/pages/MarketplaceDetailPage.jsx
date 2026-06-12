@@ -126,8 +126,8 @@ export default function MarketplaceDetailPage() {
         {listing.imageUrls && listing.imageUrls.length > 0 ? (
             <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4">
                 {listing.imageUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center block rounded-xl overflow-hidden shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
-                        <img src={url} alt={`${listing.title} - ${i + 1}`} className="w-full h-full object-cover" />
+                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center flex items-center justify-center rounded-xl overflow-hidden bg-ruin-background shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+                        <img src={url} alt={`${listing.title} - ${i + 1}`} className="h-full w-full object-contain" />
                     </a>
                 ))}
             </div>
