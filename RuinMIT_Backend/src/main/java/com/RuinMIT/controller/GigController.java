@@ -45,7 +45,7 @@ public class GigController {
             @PathVariable UUID id,
             Authentication authentication) {
         
-        String userEmail = (authentication != null && authentication.isAuthenticated()) 
+        String userEmail = (authentication != null && authentication.isAuthenticated() && !authentication.getName().equals("anonymousUser")) 
                 ? authentication.getName() 
                 : null;
                 

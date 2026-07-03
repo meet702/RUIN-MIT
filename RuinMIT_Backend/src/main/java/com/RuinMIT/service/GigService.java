@@ -62,7 +62,7 @@ public class GigService {
         GigDetailResponse response = mapToGigDetailResponse(gig);
 
         // If the requester is the poster, include applications
-        if (userEmail != null && gig.getPostedBy().getEmail().equals(userEmail)) {
+        if (userEmail != null && gig.getPostedBy().getEmail().equalsIgnoreCase(userEmail)) {
             List<GigApplicationResponse> apps = applicationRepository.findByGig(gig).stream()
                     .map(this::mapToApplicationResponse)
                     .collect(Collectors.toList());

@@ -4,11 +4,17 @@ import { useAuth } from "../../context/AuthContext";
 import DatePickerField from "../ui/DatePickerField";
 import TimePickerField from "../ui/TimePickerField";
 
-const OFFER_VEHICLES = ["bike", "car"];
+const OFFER_VEHICLES = ["bike", "auto", "cab", "car"];
 const CAR_SEATS = ["1", "2", "3"];
 const CO_PASSENGER_VEHICLES = ["auto", "cab"];
-const AUTO_SEATS = ["1", "2"];
-const CAB_SEATS = ["1", "2", "3", "4", "5"];
+const AUTO_SEATS = ["2"];
+const CAB_SEATS = ["2"];
+
+function getOfferSeats(vehicleType) {
+  if (vehicleType === "bike") return ["1"];
+  if (vehicleType === "auto" || vehicleType === "cab") return ["1", "2"];
+  return CAR_SEATS;
+}
 
 function isCoPassengerVehicle(vehicleType) {
   return CO_PASSENGER_VEHICLES.includes(vehicleType);
@@ -67,7 +73,7 @@ function buildForm(initialData) {
   }
 
   const departure = toDateTimeParts(initialData.departureTime);
-  const isCoPassenger = isCoPassengerVehicle(initialData.vehicleType);
+  const isCoPassenger = false;
   const storedSeats = String(initialData.totalSeats ?? "1");
   const storedFare = initialData.farePerPerson ?? "";
   const estimatedTotalFare =
@@ -77,7 +83,7 @@ function buildForm(initialData) {
 
   return {
     rideMode: isCoPassenger ? "coPassenger" : "offer",
-    vehicleType: isCoPassenger ? initialData.vehicleType : initialData.vehicleType || "bike",
+    vehicleType: OFFER_VEHICLES.includes(initialData.vehicleType) ? initialData.vehicleType : "bike",
     fromLocation: initialData.fromLocation || "",
     toLocation: initialData.toLocation || "",
     departureDate: departure.date,
@@ -156,8 +162,8 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "vehicleType") {
-        const allowedSeats = prev.rideMode === "coPassenger" ? getCoPassengerSeats(value) : value === "bike" ? ["1"] : CAR_SEATS;
-        next.totalSeats = allowedSeats.includes(String(prev.totalSeats)) ? String(prev.totalSeats) : "1";
+        const allowedSeats = prev.rideMode === "coPassenger" ? getCoPassengerSeats(value) : getOfferSeats(value);
+        next.totalSeats = allowedSeats.includes(String(prev.totalSeats)) ? String(prev.totalSeats) : allowedSeats[0];
       }
       return next;
     });
@@ -171,8 +177,8 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
     setForm((prev) => ({
       ...prev,
       rideMode,
-      vehicleType: rideMode === "coPassenger" ? (isCoPassengerVehicle(prev.vehicleType) ? prev.vehicleType : "auto") : prev.vehicleType === "car" ? "car" : "bike",
-      totalSeats: "1",
+      vehicleType: rideMode === "coPassenger" ? (isCoPassengerVehicle(prev.vehicleType) ? prev.vehicleType : "auto") : (OFFER_VEHICLES.includes(prev.vehicleType) ? prev.vehicleType : "bike"),
+      totalSeats: rideMode === "coPassenger" ? "2" : getOfferSeats(OFFER_VEHICLES.includes(prev.vehicleType) ? prev.vehicleType : "bike")[0],
       farePerPerson: rideMode === "coPassenger" ? "" : prev.farePerPerson,
       estimatedTotalFare: rideMode === "coPassenger" ? prev.estimatedTotalFare : "",
     }));
@@ -217,7 +223,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
         nextErrors.vehicleType = "Choose auto or cab.";
       }
       if (!getCoPassengerSeats(form.vehicleType).includes(String(form.totalSeats))) {
-        nextErrors.totalSeats = form.vehicleType === "cab" ? "Choose 1 to 5 co-passengers." : "Choose 1 or 2 co-passengers.";
+        nextErrors.totalSeats = "Auto and cab rides use 2 seats.";
       }
       if (!form.estimatedTotalFare) {
         nextErrors.estimatedTotalFare = "Estimated total fare is required.";
@@ -226,13 +232,16 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
       }
     } else {
       if (!OFFER_VEHICLES.includes(form.vehicleType)) {
-        nextErrors.vehicleType = "Choose bike or car.";
+        nextErrors.vehicleType = "Choose bike, auto, cab, or car.";
       }
-      if (form.vehicleType === "bike" && seats !== 1) {
-        nextErrors.totalSeats = "Bike rides can offer only 1 pillion seat.";
-      }
-      if (form.vehicleType === "car" && !CAR_SEATS.includes(String(form.totalSeats))) {
-        nextErrors.totalSeats = "Choose 1, 2, or 3 seats.";
+      if (!getOfferSeats(form.vehicleType).includes(String(form.totalSeats))) {
+        if (form.vehicleType === "car") {
+          nextErrors.totalSeats = "Choose 1, 2, or 3 seats.";
+        } else if (form.vehicleType === "bike") {
+          nextErrors.totalSeats = "Bike rides can offer only 1 pillion seat.";
+        } else {
+          nextErrors.totalSeats = "Choose 1 or 2 seats.";
+        }
       }
       if (!form.farePerPerson) {
         nextErrors.farePerPerson = "Fare per person is required.";
@@ -321,7 +330,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
             }`}
           >
             <span className="block font-heading text-sm font-bold">Offering a Ride</span>
-            <span className="mt-1 block text-xs leading-snug opacity-90">I'm going somewhere on my bike/car and can take someone</span>
+            <span className="mt-1 block text-xs leading-snug opacity-90">I'm going somewhere and can take someone</span>
           </button>
           <button
             type="button"
@@ -394,7 +403,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
                         active={form.vehicleType === vehicle}
                         onClick={() => updateField("vehicleType", vehicle)}
                       >
-                        {vehicle === "bike" ? "Bike" : "Car"}
+                        {vehicle === "bike" ? "Bike" : vehicle === "auto" ? "Auto" : vehicle === "cab" ? "Cab" : "Car"}
                       </Chip>
                     ))}
                   </div>
@@ -404,7 +413,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
                 <div>
                   <span className="text-sm font-medium text-ruin-text">Seats</span>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {(form.vehicleType === "bike" ? ["1"] : CAR_SEATS).map((seat) => (
+                    {getOfferSeats(form.vehicleType).map((seat) => (
                       <Chip
                         key={seat}
                         active={form.totalSeats === seat}

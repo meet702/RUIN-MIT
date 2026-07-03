@@ -12,7 +12,6 @@ function formatFare(value) {
 export default function RideCard({ ride, index, isOwnPost = false, currentUser = null }) {
   const accent = ride.status === "open" ? "#00C9A7" : ride.status === "full" ? "#F26522" : "#A78BFA";
   const [isHovered, setIsHovered] = useState(false);
-  const isCoPassenger = ride.vehicleType === "auto" || ride.vehicleType === "cab";
   const posterName =
     (isOwnPost && currentUser?.fullName) ||
     ride.driverFullName ||
@@ -92,19 +91,9 @@ export default function RideCard({ ride, index, isOwnPost = false, currentUser =
           <p className="font-heading text-xl font-bold text-ruin-text">{departureTime}</p>
         </div>
         <div className="rounded-lg border border-ruin-border bg-ruin-background px-3 py-2 text-right">
-          <p className="text-xs font-medium text-ruin-muted">
-            {isCoPassenger ? "Needed" : "Seats"}
-          </p>
+          <p className="text-xs font-medium text-ruin-muted">Seats</p>
           <p className="font-heading text-xl font-bold text-ruin-text">
-            {isCoPassenger ? (
-              <>
-                {availableSeats} <span className="text-xs font-normal text-ruin-muted">co-passenger{availableSeats === 1 ? "" : "s"}</span>
-              </>
-            ) : (
-              <>
-                {availableSeats} <span className="text-sm text-ruin-muted">/ {ride.totalSeats}</span>
-              </>
-            )}
+            {availableSeats} <span className="text-sm text-ruin-muted">/ {ride.totalSeats}</span>
           </p>
         </div>
       </div>
@@ -120,7 +109,7 @@ export default function RideCard({ ride, index, isOwnPost = false, currentUser =
               {"\u20B9"}{formatFare(ride.farePerPerson)}
             </p>
             <p className="text-[11px] font-medium text-ruin-muted">
-              {isCoPassenger ? "per person split" : "per person"}
+              per person
             </p>
           </div>
         )}
