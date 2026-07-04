@@ -6,6 +6,7 @@ import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
 import PostLostFoundModal from "../components/lostfound/PostLostFoundModal";
 import { Search, Info } from "lucide-react";
+import SkeletonDetail from "../components/ui/SkeletonDetail";
 
 export default function LostFoundDetailPage() {
   const { id } = useParams();
@@ -74,7 +75,7 @@ export default function LostFoundDetailPage() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-ruin-muted">Loading post...</div>;
+  if (isLoading) return <SkeletonDetail />;
   if (error || !post) return <div className="p-8 text-center text-ruin-magenta">{error || "Post not found"}</div>;
 
   const posterId = post.posterId || post.poster?.id;

@@ -4,6 +4,7 @@ import { ChatProvider } from "./context/ChatContext";
 import Navbar from "./components/layout/Navbar";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import ChatPopup from "./components/chat/ChatPopup";
+import TopProgressBar from "./components/ui/TopProgressBar";
 import { useAuth } from "./context/AuthContext";
 
 // Pages
@@ -41,6 +42,7 @@ export default function App() {
     <AuthProvider>
       <ChatProvider>
         <BrowserRouter>
+          <TopProgressBar />
           <Routes>
           {/* Public Auth Routes */}
           <Route path="/login" element={<LoginPage />} />

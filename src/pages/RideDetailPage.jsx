@@ -7,6 +7,7 @@ import Button from "../components/ui/Button";
 import ChatButton from "../components/chat/ChatButton";
 import PostRideModal from "../components/rides/PostRideModal";
 import { CircleDot, MapPin, Calendar, Clock, Info } from "lucide-react";
+import SkeletonDetail from "../components/ui/SkeletonDetail";
 
 export default function RideDetailPage() {
   const { id } = useParams();
@@ -103,7 +104,7 @@ export default function RideDetailPage() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-ruin-muted">Loading ride...</div>;
+  if (isLoading) return <SkeletonDetail />;
   if (error || !ride) return <div className="p-8 text-center text-ruin-magenta">{error || "Ride not found"}</div>;
 
   const driverId = ride.driverId || ride.poster?.id;

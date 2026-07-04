@@ -6,6 +6,7 @@ import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
 import PostMarketplaceModal from "../components/marketplace/PostMarketplaceModal";
 import { Package } from "lucide-react";
+import SkeletonDetail from "../components/ui/SkeletonDetail";
 
 function getCurrentUserId(user) {
   if (user?.id) {
@@ -96,7 +97,7 @@ export default function MarketplaceDetailPage() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-ruin-muted">Loading listing...</div>;
+  if (isLoading) return <SkeletonDetail />;
   if (error || !listing) return <div className="p-8 text-center text-ruin-magenta">{error || "Listing not found"}</div>;
 
   const sellerId = listing.sellerId || listing.poster?.id;

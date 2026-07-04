@@ -8,6 +8,7 @@ import Button from "../components/ui/Button";
 import { useGigs } from "../hooks/useGigs";
 import { useAuth } from "../context/AuthContext";
 import { getCurrentUserId } from "../utils/ownership";
+import SkeletonCard from "../components/ui/SkeletonCard";
 
 export default function GigBoardPage() {
   const { gigs, selectedStatus, selectStatus, addGig, isExiting, isLoading } = useGigs();
@@ -43,7 +44,7 @@ export default function GigBoardPage() {
         <GigFilters selectedStatus={selectedStatus} onSelectStatus={selectStatus} />
         
         {isLoading ? (
-            <div className="mt-12 text-center text-ruin-muted">Loading gigs...</div>
+            <SkeletonCard count={6} gridClassName="grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3" />
         ) : gigs.length === 0 ? (
             <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
                 No gigs found in this category.

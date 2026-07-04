@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
 import PostFlatmateModal from "../components/flatmates/PostFlatmateModal";
+import SkeletonDetail from "../components/ui/SkeletonDetail";
 
 function getCurrentUserId(user) {
   if (user?.id) {
@@ -115,7 +116,7 @@ export default function FlatmateDetailPage() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-ruin-muted">Loading listing...</div>;
+  if (isLoading) return <SkeletonDetail />;
   if (error || !listing) return <div className="p-8 text-center text-ruin-magenta">{error || "Listing not found"}</div>;
 
   const currentUserId = getCurrentUserId(user);

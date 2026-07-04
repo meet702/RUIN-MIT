@@ -8,6 +8,7 @@ import PostFlatmateModal from "../components/flatmates/PostFlatmateModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
 import { getCurrentUserId } from "../utils/ownership";
+import SkeletonCard from "../components/ui/SkeletonCard";
 
 export default function FlatmatePage() {
   const [listings, setListings] = useState([]);
@@ -90,7 +91,7 @@ export default function FlatmatePage() {
         </div>
         
         {isLoading ? (
-            <div className="mt-12 text-center text-ruin-muted">Loading listings...</div>
+            <SkeletonCard count={6} />
         ) : listings.length === 0 ? (
             <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
                 No listings found.

@@ -8,6 +8,7 @@ import PostLostFoundModal from "../components/lostfound/PostLostFoundModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
 import { getCurrentUserId } from "../utils/ownership";
+import SkeletonCard from "../components/ui/SkeletonCard";
 
 export default function LostFoundPage() {
   const [posts, setPosts] = useState([]);
@@ -92,7 +93,7 @@ export default function LostFoundPage() {
         </div>
         
         {isLoading ? (
-            <div className="mt-12 text-center text-ruin-muted">Loading posts...</div>
+            <SkeletonCard count={6} />
         ) : posts.length === 0 ? (
             <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
                 No items found.

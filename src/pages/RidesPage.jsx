@@ -8,6 +8,7 @@ import PostRideModal from "../components/rides/PostRideModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
 import { getCurrentUserId } from "../utils/ownership";
+import SkeletonCard from "../components/ui/SkeletonCard";
 
 const VEHICLE_TYPES = ["All", "auto", "cab", "car", "bike", "other"];
 
@@ -94,7 +95,7 @@ export default function RidesPage() {
         </div>
         
         {isLoading ? (
-            <div className="mt-12 text-center text-ruin-muted">Loading rides...</div>
+            <SkeletonCard count={6} />
         ) : rides.length === 0 ? (
             <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
                 No rides found.

@@ -8,6 +8,7 @@ import Button from "../components/ui/Button";
 import ChatButton from "../components/chat/ChatButton";
 import PostGigModal from "../components/gigs/PostGigModal";
 import { getCurrentUserId, isOwnPost } from "../utils/ownership";
+import SkeletonDetail from "../components/ui/SkeletonDetail";
 
 export default function GigDetailPage() {
   const { id } = useParams();
@@ -113,7 +114,7 @@ export default function GigDetailPage() {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-ruin-muted">Loading gig...</div>;
+    return <SkeletonDetail />;
   }
 
   if (error || !gig) {
