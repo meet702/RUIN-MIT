@@ -1,3 +1,6 @@
+# ==============================
+# Frontend (React + Vite)
+# ==============================
 node_modules/
 dist/
 .vite/
@@ -18,5 +21,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Backend duplicate (backend lives in its own repo)
-#RuinMIT_Backend/
+# ==============================
+# Backend (Spring Boot / Maven)
+# ==============================
+RuinMIT_Backend/target/
+RuinMIT_Backend/*.log
+RuinMIT_Backend/src/main/resources/application-local.properties
