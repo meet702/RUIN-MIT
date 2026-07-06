@@ -180,17 +180,17 @@ export default function NotificationBell() {
     loadNotifications();
 
     const connectSSE = () => {
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-      if (!token || !shouldReconnectRef.current) {
-        return;
-      }
+    const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
+    if (!token || !shouldReconnectRef.current) {
+      return;
+    }
 
-      eventSourceRef.current?.close();
+    eventSourceRef.current?.close();
 
-      const eventSource = new EventSource(
-        `http://localhost:8089/api/notifications/stream?token=${encodeURIComponent(token)}`,
-        { withCredentials: true }
-      );
+    const eventSource = new EventSource(
+      `${import.meta.env.VITE_API_URL}/api/notifications/stream?token=${encodeURIComponent(token)}`,
+      { withCredentials: true }
+    );
 
       eventSource.onmessage = (event) => {
         try {
