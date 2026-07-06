@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle, Minus, Send, X } from "lucide-react";
+import { MessageCircle, Minus, Send, X, ArrowLeft } from "lucide-react";
 import { chatService, getChatToken } from "../../services/ChatService";
 import { useChatWebSocket } from "../../hooks/useChatWebSocket";
 import { useChat } from "../../context/ChatContext";
@@ -230,9 +230,25 @@ export default function ChatPopup() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex max-h-[78vh] overflow-hidden rounded-lg border border-ruin-border bg-ruin-card shadow-2xl">
-      <div className="flex w-[300px] flex-col border-r border-ruin-border">
-        <div className="flex h-14 items-center justify-between border-b border-ruin-border px-4">
+    // Mobile: full-screen fixed overlay (inset-0, no rounded corners, no side-by-side).
+    // Desktop (sm+): the original bottom-right floating card with fixed widths.
+    <div
+      className="
+        fixed inset-0 z-50 flex flex-col
+        sm:inset-auto sm:bottom-5 sm:right-5 sm:flex-row
+        sm:max-h-[78vh] sm:overflow-hidden sm:rounded-lg sm:border sm:border-ruin-border
+        bg-ruin-card shadow-2xl
+      "
+    >
+      {/* Conversation list: full width on mobile, hidden if a conversation is open on mobile */}
+      <div
+        className={`
+          ${selectedConversation ? "hidden" : "flex"}
+          w-full flex-col border-ruin-border
+          sm:flex sm:w-[300px] sm:border-r
+        `}
+      >
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-ruin-border px-4">
           <div>
             <h2 className="font-heading text-lg font-bold text-ruin-text">Messages</h2>
             {!isConnected && <p className="text-xs text-ruin-muted">Reconnecting...</p>}
@@ -261,7 +277,7 @@ export default function ChatPopup() {
           </div>
         </div>
 
-        <div className="min-h-[320px] flex-1 overflow-y-auto custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar sm:min-h-[320px]">
           {isLoadingConversations && (
             <div className="space-y-1 p-2">
               {[...Array(4)].map((_, i) => (
@@ -332,21 +348,33 @@ export default function ChatPopup() {
         </div>
       </div>
 
+      {/* Conversation panel: full width on mobile (only shown when selected), fixed width on desktop */}
       {selectedConversation && (
-        <div className="flex w-[400px] flex-col">
-          <div className="flex h-14 items-center justify-between border-b border-ruin-border px-4">
-            <div className="min-w-0">
-              <h3 className="truncate text-sm font-bold text-ruin-text">{selectedConversation.otherParticipant?.name || selectedConversation.otherUserName}</h3>
-              <p className="truncate text-xs text-ruin-muted">
-                Re: {selectedConversation.referenceType} - {selectedConversation.referenceTitle || selectedConversation.referenceId}
-              </p>
+        <div className="flex w-full min-w-0 flex-1 flex-col sm:w-[400px] sm:flex-none">
+          <div className="flex h-14 shrink-0 items-center justify-between border-b border-ruin-border px-4">
+            <div className="flex min-w-0 items-center gap-2">
+              {/* Back button only makes sense on mobile, where list is hidden */}
+              <button
+                type="button"
+                onClick={() => setActiveConversationId(null)}
+                className="shrink-0 text-ruin-muted hover:text-ruin-text sm:hidden"
+                aria-label="Back to conversations"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-bold text-ruin-text">{selectedConversation.otherParticipant?.name || selectedConversation.otherUserName}</h3>
+                <p className="truncate text-xs text-ruin-muted">
+                  Re: {selectedConversation.referenceType} - {selectedConversation.referenceTitle || selectedConversation.referenceId}
+                </p>
+              </div>
             </div>
-            <button type="button" onClick={() => setActiveConversationId(null)} className="text-ruin-muted hover:text-ruin-text" aria-label="Close conversation">
+            <button type="button" onClick={() => setActiveConversationId(null)} className="hidden shrink-0 text-ruin-muted hover:text-ruin-text sm:block" aria-label="Close conversation">
               <X size={18} />
             </button>
           </div>
 
-          <div className="h-[360px] flex-1 overflow-y-auto bg-ruin-background p-4 custom-scrollbar">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-ruin-background p-4 custom-scrollbar sm:h-[360px] sm:flex-1">
             {isLoadingMessages ? (
               <div className="flex h-full flex-col justify-end gap-4 p-2 opacity-50">
                 <div className="flex justify-start">
@@ -386,7 +414,7 @@ export default function ChatPopup() {
             )}
           </div>
 
-          <div className="flex gap-2 border-t border-ruin-border p-3">
+          <div className="flex shrink-0 gap-2 border-t border-ruin-border p-3">
             <input
               value={messageText}
               onChange={(event) => setMessageText(event.target.value)}
@@ -402,7 +430,7 @@ export default function ChatPopup() {
             <button
               type="button"
               onClick={handleSend}
-              className="flex h-10 w-10 items-center justify-center rounded-lg bg-ruin-orange text-ruin-background disabled:opacity-50"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ruin-orange text-ruin-background disabled:opacity-50"
               disabled={!messageText.trim()}
               aria-label="Send message"
             >
