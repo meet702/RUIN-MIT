@@ -179,10 +179,13 @@ public class FlatmateService {
             throw new UnauthorizedException("Only the poster can delete this listing");
         }
 
-        // Delete images from Cloudinary BEFORE deleting from DB
-        cloudinaryService.deleteMultipleByUrls(listing.getImageUrlList());
+        // Capture image URLs before deleting the entity
+        List<String> imageUrls = listing.getImageUrlList();
 
-        listingRepository.delete(listing); // This will cascade and delete associated inquiries
+        listingRepository.delete(listing); // Delete DB record first for fast response
+
+        // Clean up Cloudinary images asynchronously in the background
+        cloudinaryService.deleteMultipleByUrlsAsync(imageUrls);
     }
 
     @Transactional

@@ -3,6 +3,8 @@ import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import DatePickerField from "../ui/DatePickerField";
 import TimePickerField from "../ui/TimePickerField";
+import CurrencyInput from "../ui/CurrencyInput";
+import ActionLoader from "../ui/ActionLoader";
 
 const initialForm = {
   title: "",
@@ -122,16 +124,18 @@ export default function PostGigModal({ open, onClose, onSubmit, initialData = nu
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          closeModal();
-        }
-      }}
-    >
+    <>
+      {isLoading && <ActionLoader message={isEditing ? "Saving changes..." : "Posting gig..."} />}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) {
+            closeModal();
+          }
+        }}
+      >
       <form
-        className={`w-full max-w-[520px] rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
+        className={`w-full max-w-[520px] max-h-[90vh] overflow-y-auto custom-scrollbar rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
           isClosing ? "modal-exit" : "modal-enter"
         }`}
         onSubmit={handleSubmit}
@@ -177,20 +181,12 @@ export default function PostGigModal({ open, onClose, onSubmit, initialData = nu
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm font-medium text-ruin-text">Budget in ₹</span>
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-heading font-semibold text-ruin-muted">
-                ₹
-              </span>
-              <input
-                min="0"
-                type="number"
-                value={form.budget}
-                onChange={(event) => updateField("budget", event.target.value)}
-                className="w-full rounded-lg border border-ruin-border bg-ruin-background py-3 pl-9 pr-4 font-heading font-semibold tracking-[0.02em] text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
-                placeholder="200"
-              />
-            </div>
+            <span className="text-sm font-medium text-ruin-text">Budget</span>
+            <CurrencyInput
+              value={form.budget}
+              onChange={(value) => updateField("budget", value)}
+              placeholder="200"
+            />
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -214,5 +210,6 @@ export default function PostGigModal({ open, onClose, onSubmit, initialData = nu
         </Button>
       </form>
     </div>
+    </>
   );
 }

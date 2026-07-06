@@ -3,6 +3,10 @@ import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import DatePickerField from "../ui/DatePickerField";
 import ImageUploader from "../common/ImageUploader";
+import CurrencyInput from "../ui/CurrencyInput";
+import TagInput from "../ui/TagInput";
+import { uploadService } from "../../api/uploadService";
+import ActionLoader from "../ui/ActionLoader";
 
 const initialForm = {
   title: "",
@@ -37,6 +41,7 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
   
   const { isAuthenticated } = useAuth();
   const isEditing = mode === "edit";
@@ -65,6 +70,7 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
       setIsClosing(false);
       setError("");
       setForm(buildForm(initialData));
+      setPendingFiles([]);
       onClose();
     }, 250);
   };
@@ -79,28 +85,44 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
     setIsLoading(true);
     setError("");
 
-    const formattedData = {
-        ...form,
-        rentPerMonth: parseFloat(form.rentPerMonth)
-    };
+    try {
+      let finalImageUrls = [...form.imageUrls];
 
-    const result = await onSubmit(formattedData);
-    if (result && result.success) {
-        closeModal();
-    } else {
-        setError(result?.message || `Failed to ${isEditing ? "update" : "create"} listing`);
+      if (pendingFiles.length > 0) {
+        const uploadPromises = pendingFiles.map(file => uploadService.uploadFile(file));
+        const newUrls = await Promise.all(uploadPromises);
+        finalImageUrls = [...finalImageUrls, ...newUrls.filter(Boolean)];
+      }
+
+      const formattedData = {
+          ...form,
+          rentPerMonth: parseFloat(form.rentPerMonth),
+          imageUrls: finalImageUrls,
+      };
+
+      const result = await onSubmit(formattedData);
+      if (result && result.success) {
+          closeModal();
+      } else {
+          setError(result?.message || `Failed to ${isEditing ? "update" : "create"} listing`);
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setError("Failed to upload one or more images. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onMouseDown={(e) => e.target === e.currentTarget && closeModal()}
-    >
+    <>
+      {isLoading && <ActionLoader message={isEditing ? "Saving changes..." : "Posting listing..."} />}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        onMouseDown={(e) => e.target === e.currentTarget && closeModal()}
+      >
       <form
-        className={`w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
+        className={`w-full max-w-[520px] max-h-[90vh] overflow-y-auto custom-scrollbar rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
           isClosing ? "modal-exit" : "modal-enter"
         }`}
         onSubmit={handleSubmit}
@@ -126,7 +148,7 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
               required
               value={form.title}
               onChange={(e) => updateField("title", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
               placeholder="1 Room available in 3BHK"
             />
           </label>
@@ -138,7 +160,8 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
               rows={3}
               value={form.description}
               onChange={(e) => updateField("description", e.target.value)}
-              className="mt-2 w-full resize-none rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              className="mt-2 w-full resize-none rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
+              placeholder="Describe the flat, roommates, lifestyle, etc."
             />
           </label>
 
@@ -148,21 +171,19 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
               required
               value={form.location}
               onChange={(e) => updateField("location", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
               placeholder="Near MIT Campus, Kothrud"
             />
           </label>
 
           <div className="grid grid-cols-2 gap-4">
             <label className="block">
-              <span className="text-sm font-medium text-ruin-text">Rent (₹/mo)</span>
-              <input
+              <span className="text-sm font-medium text-ruin-text">Rent / Month</span>
+              <CurrencyInput
                 required
-                type="number"
-                min="0"
                 value={form.rentPerMonth}
-                onChange={(e) => updateField("rentPerMonth", e.target.value)}
-                className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+                onChange={(value) => updateField("rentPerMonth", value)}
+                placeholder="8500"
               />
             </label>
             <DatePickerField
@@ -190,11 +211,10 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
           </div>
           
           <label className="block">
-            <span className="text-sm font-medium text-ruin-text">Amenities (comma separated)</span>
-            <input
+            <span className="text-sm font-medium text-ruin-text">Amenities</span>
+            <TagInput
               value={form.amenities}
-              onChange={(e) => updateField("amenities", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              onChange={(value) => updateField("amenities", value)}
               placeholder="WiFi, AC, Washing Machine"
             />
           </label>
@@ -208,6 +228,8 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
               referenceId={isEditing ? initialData.id : null}
               onUpload={(urls) => updateField("imageUrls", urls)}
               onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
+              deferredUpload={true}
+              onPendingFilesChange={setPendingFiles}
             />
           </div>
         </div>
@@ -217,5 +239,6 @@ export default function PostFlatmateModal({ open, onClose, onSubmit, initialData
         </Button>
       </form>
     </div>
+    </>
   );
 }

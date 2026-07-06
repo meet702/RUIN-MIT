@@ -110,10 +110,13 @@ public class LostAndFoundService {
             throw new UnauthorizedException("Only the poster can delete this post");
         }
 
-        // Delete images from Cloudinary BEFORE deleting from DB
-        cloudinaryService.deleteMultipleByUrls(post.getImageUrlList());
+        // Capture image URLs before deleting the entity
+        List<String> imageUrls = post.getImageUrlList();
 
-        lostAndFoundRepository.delete(post);
+        lostAndFoundRepository.delete(post); // Delete DB record first for fast response
+
+        // Clean up Cloudinary images asynchronously in the background
+        cloudinaryService.deleteMultipleByUrlsAsync(imageUrls);
     }
 
     @Transactional

@@ -39,6 +39,17 @@ button {
   cursor: pointer;
 }
 
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%237A7672%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem !important;
+}
+
 .max-h-56::-webkit-scrollbar {
   width: 6px;
 }
@@ -51,6 +62,29 @@ button {
 .max-h-56::-webkit-scrollbar-thumb {
   background: rgba(242, 101, 34, 0.72);
   border-radius: 999px;
+}
+
+/* ===== Global thin dark scrollbars ===== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(122, 118, 114, 0.35);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(242, 101, 34, 0.55);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(122, 118, 114, 0.35) transparent;
 }
 
 .chip-enter {
@@ -123,5 +157,129 @@ button {
   to {
     opacity: 0;
     transform: scale(0.95);
+  }
+}
+
+/* ===== Loading System ===== */
+
+/* --- Skeleton shimmer --- */
+.skeleton-shimmer {
+  background: linear-gradient(
+    110deg,
+    #1A1A1A 0%,
+    #1A1A1A 40%,
+    #2A2A2A 50%,
+    #1A1A1A 60%,
+    #1A1A1A 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* --- Skeleton card staggered entrance --- */
+.skeleton-card {
+  animation: skeleton-fade-in 400ms ease-out both;
+}
+
+@keyframes skeleton-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Page loader ring spin --- */
+.page-loader-ring {
+  animation: ring-spin 1.2s linear infinite;
+}
+
+@keyframes ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Page loader arc dash animation --- */
+.page-loader-arc {
+  animation: arc-dash 1.5s ease-in-out infinite;
+}
+
+@keyframes arc-dash {
+  0% {
+    stroke-dashoffset: 160;
+  }
+  50% {
+    stroke-dashoffset: 40;
+  }
+  100% {
+    stroke-dashoffset: 160;
+  }
+}
+
+/* --- Page loader centre letter pulse --- */
+.page-loader-pulse {
+  animation: letter-pulse 2s ease-in-out infinite;
+}
+
+@keyframes letter-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* --- Page loader bouncing dots --- */
+.page-loader-dot {
+  animation: dot-bounce 1s ease-in-out infinite;
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+/* --- Top progress bar --- */
+.top-progress-bar {
+  background: linear-gradient(90deg, #F26522, #FF8A50, #F26522);
+  box-shadow: 0 0 12px rgba(242, 101, 34, 0.5), 0 0 4px rgba(242, 101, 34, 0.3);
+  transition: width 200ms ease-out;
+  border-radius: 0 2px 2px 0;
+}
+
+/* --- Generic fade in utility --- */
+.animate-fade-in {
+  animation: fade-in 350ms ease-out both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

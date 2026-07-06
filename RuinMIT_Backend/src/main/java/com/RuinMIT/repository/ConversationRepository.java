@@ -17,6 +17,8 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
 
     @Query("""
             SELECT c FROM Conversation c
+            JOIN FETCH c.participantOne
+            JOIN FETCH c.participantTwo
             WHERE c.participantOne.id = :userId OR c.participantTwo.id = :userId
             ORDER BY c.lastMessageAt DESC NULLS LAST, c.createdAt DESC
             """)

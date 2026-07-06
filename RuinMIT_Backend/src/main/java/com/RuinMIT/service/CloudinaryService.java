@@ -87,9 +87,19 @@ public class CloudinaryService {
     }
 
     /**
-     * Deletes multiple files from Cloudinary using their URLs.
+     * Deletes multiple files from Cloudinary using their URLs (synchronous).
      */
     public void deleteMultipleByUrls(java.util.List<String> urls) {
+        if (urls == null || urls.isEmpty()) return;
+        urls.forEach(this::deleteByUrl);
+    }
+
+    /**
+     * Deletes multiple files from Cloudinary using their URLs (asynchronous).
+     * Runs in a background thread so the calling method returns immediately.
+     */
+    @org.springframework.scheduling.annotation.Async
+    public void deleteMultipleByUrlsAsync(java.util.List<String> urls) {
         if (urls == null || urls.isEmpty()) return;
         urls.forEach(this::deleteByUrl);
     }

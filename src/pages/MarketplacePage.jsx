@@ -7,7 +7,11 @@ import MarketplaceCard from "../components/marketplace/MarketplaceCard";
 import PostMarketplaceModal from "../components/marketplace/PostMarketplaceModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import FilterPillGroup from "../components/ui/FilterPillGroup";
 import { getCurrentUserId } from "../utils/ownership";
+import SkeletonCard from "../components/ui/SkeletonCard";
+import EmptyState from "../components/ui/EmptyState";
+import { Package } from "lucide-react";
 
 const CATEGORIES = ["All", "books", "electronics", "cycles", "stationery", "clothing", "furniture", "other"];
 
@@ -69,7 +73,7 @@ export default function MarketplacePage() {
             <h1 className="font-heading text-5xl font-bold leading-none text-ruin-text sm:text-6xl lg:text-7xl">
               Marketplace
             </h1>
-            <p className="mt-4 text-base text-ruin-muted sm:text-lg">Buy and sell items within the campus.</p>
+            <p className="mt-4 text-base text-gray-300 sm:text-lg">Buy and sell items within the campus.</p>
           </div>
 
           <Button className="sm:mt-2" variant="orange" onClick={handlePostClick}>
@@ -77,27 +81,29 @@ export default function MarketplacePage() {
           </Button>
         </header>
 
-        <div className="-mx-4 mt-10 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="flex snap-x snap-mandatory gap-3 pb-2">
-            {CATEGORIES.map((category) => (
-              <Tag
-                key={category}
-                active={selectedCategory === category}
-                className="capitalize"
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </Tag>
-            ))}
-          </div>
-        </div>
+        <FilterPillGroup>
+          {CATEGORIES.map((category) => (
+            <Tag
+              key={category}
+              active={selectedCategory === category}
+              className="capitalize"
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </Tag>
+          ))}
+        </FilterPillGroup>
         
         {isLoading ? (
-            <div className="mt-12 text-center text-ruin-muted">Loading listings...</div>
+            <SkeletonCard count={6} />
         ) : listings.length === 0 ? (
-            <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
-                No items found in this category.
-            </div>
+            <EmptyState 
+              icon={Package}
+              title="No items found"
+              description="There are currently no items in this category. Be the first to sell something!"
+              actionLabel="+ Sell an Item"
+              onAction={handlePostClick}
+            />
         ) : (
             <ListingSections
               items={listings}

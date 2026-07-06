@@ -18,6 +18,10 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -54,9 +58,48 @@ public class ChatService {
 
     public List<ConversationResponse> getConversations(String userEmail) {
         User currentUser = findUserByEmail(userEmail);
-        return conversationRepository.findAllForUserOrderByRecent(currentUser.getId())
-                .stream()
-                .map(conversation -> mapToConversationResponse(conversation, currentUser))
+        List<Conversation> conversations = conversationRepository.findAllForUserOrderByRecent(currentUser.getId());
+        
+        if (conversations.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<UUID> conversationIds = conversations.stream().map(Conversation::getId).toList();
+
+        // Batch fetch unread counts
+        List<Object[]> unreadCountsData = messageRepository.countUnreadByConversationIdsAndSenderIdNot(conversationIds, currentUser.getId());
+        Map<UUID, Long> unreadCounts = new HashMap<>();
+        for (Object[] row : unreadCountsData) {
+            unreadCounts.put((UUID) row[0], (Long) row[1]);
+        }
+
+        // Batch fetch reference titles
+        Map<String, List<UUID>> refsByType = conversations.stream()
+                .filter(c -> c.getReferenceType() != null && c.getReferenceId() != null)
+                .collect(Collectors.groupingBy(Conversation::getReferenceType,
+                        Collectors.mapping(Conversation::getReferenceId, Collectors.toList())));
+
+        Map<UUID, String> referenceTitles = new HashMap<>();
+        
+        for (Map.Entry<String, List<UUID>> entry : refsByType.entrySet()) {
+            String type = entry.getKey();
+            List<UUID> ids = entry.getValue();
+            
+            switch (type) {
+                case "gig" -> gigRepository.findAllById(ids).forEach(gig -> referenceTitles.put(gig.getId(), gig.getTitle() + " gig"));
+                case "ride" -> rideRepository.findAllById(ids).forEach(ride -> referenceTitles.put(ride.getId(), ride.getFromLocation() + " to " + ride.getToLocation()));
+                case "marketplace" -> marketplaceListingRepository.findAllById(ids).forEach(listing -> referenceTitles.put(listing.getId(), listing.getTitle() + " listing"));
+                case "flatmate" -> flatmateListingRepository.findAllById(ids).forEach(listing -> referenceTitles.put(listing.getId(), listing.getTitle() + " listing"));
+                case "lost_found" -> lostAndFoundRepository.findAllById(ids).forEach(post -> referenceTitles.put(post.getId(), post.getTitle() + " post"));
+            }
+        }
+
+        return conversations.stream()
+                .map(conversation -> mapToConversationResponse(
+                        conversation, 
+                        currentUser, 
+                        unreadCounts.getOrDefault(conversation.getId(), 0L), 
+                        referenceTitles.get(conversation.getReferenceId())))
                 .toList();
     }
 
@@ -143,6 +186,15 @@ public class ChatService {
     }
 
     private ConversationResponse mapToConversationResponse(Conversation conversation, User currentUser) {
+        long unreadCount = messageRepository.countByConversationIdAndIsReadFalseAndSenderIdNot(
+                conversation.getId(),
+                currentUser.getId());
+        String refTitle = resolveReferenceTitle(conversation.getReferenceType(), conversation.getReferenceId());
+        
+        return mapToConversationResponse(conversation, currentUser, unreadCount, refTitle);
+    }
+
+    private ConversationResponse mapToConversationResponse(Conversation conversation, User currentUser, long unreadCount, String referenceTitle) {
         User otherUser = conversation.getParticipantOne().getId().equals(currentUser.getId())
                 ? conversation.getParticipantTwo()
                 : conversation.getParticipantOne();
@@ -158,13 +210,11 @@ public class ChatService {
                         .build())
                 .referenceType(conversation.getReferenceType())
                 .referenceId(conversation.getReferenceId())
-                .referenceTitle(resolveReferenceTitle(conversation.getReferenceType(), conversation.getReferenceId()))
+                .referenceTitle(referenceTitle != null ? referenceTitle : conversation.getReferenceType())
                 .lastMessage(conversation.getLastMessage())
                 .lastMessageAt(conversation.getLastMessageAt())
                 .createdAt(conversation.getCreatedAt())
-                .unreadCount(messageRepository.countByConversationIdAndIsReadFalseAndSenderIdNot(
-                        conversation.getId(),
-                        currentUser.getId()))
+                .unreadCount(unreadCount)
                 .build();
     }
 

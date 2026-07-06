@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import ImageUploader from "../common/ImageUploader";
+import ToggleGroup from "../ui/ToggleGroup";
+import { uploadService } from "../../api/uploadService";
+import ActionLoader from "../ui/ActionLoader";
 
 const initialForm = {
   type: "lost",
@@ -31,6 +34,7 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
   
   const { isAuthenticated } = useAuth();
   const isEditing = mode === "edit";
@@ -59,6 +63,7 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
       setIsClosing(false);
       setError("");
       setForm(buildForm(initialData));
+      setPendingFiles([]);
       onClose();
     }, 250);
   };
@@ -73,27 +78,43 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
     setIsLoading(true);
     setError("");
 
-    const formattedData = {
-        ...form,
-    };
+    try {
+      let finalImageUrls = [...form.imageUrls];
 
-    const result = await onSubmit(formattedData);
-    if (result && result.success) {
-        closeModal();
-    } else {
-        setError(result?.message || `Failed to ${isEditing ? "update" : "create"} post`);
+      if (pendingFiles.length > 0) {
+        const uploadPromises = pendingFiles.map(file => uploadService.uploadFile(file));
+        const newUrls = await Promise.all(uploadPromises);
+        finalImageUrls = [...finalImageUrls, ...newUrls.filter(Boolean)];
+      }
+
+      const formattedData = {
+          ...form,
+          imageUrls: finalImageUrls,
+      };
+
+      const result = await onSubmit(formattedData);
+      if (result && result.success) {
+          closeModal();
+      } else {
+          setError(result?.message || `Failed to ${isEditing ? "update" : "create"} post`);
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setError("Failed to upload one or more images. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onMouseDown={(e) => e.target === e.currentTarget && closeModal()}
-    >
+    <>
+      {isLoading && <ActionLoader message={isEditing ? "Saving changes..." : "Posting item..."} />}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        onMouseDown={(e) => e.target === e.currentTarget && closeModal()}
+      >
       <form
-        className={`w-full max-w-[520px] max-h-[90vh] overflow-y-auto rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
+        className={`w-full max-w-[520px] max-h-[90vh] overflow-y-auto custom-scrollbar rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
           isClosing ? "modal-exit" : "modal-enter"
         }`}
         onSubmit={handleSubmit}
@@ -113,33 +134,21 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
         )}
 
         <div className="space-y-4">
-          <div className="flex gap-4">
-              <label className="flex-1 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="type" 
-                    value="lost" 
-                    checked={form.type === "lost"}
-                    onChange={(e) => updateField("type", e.target.value)}
-                    className="peer sr-only"
-                  />
-                  <div className="rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-center font-medium text-ruin-muted peer-checked:border-ruin-orange peer-checked:text-ruin-orange transition-colors">
-                      I Lost Something
-                  </div>
-              </label>
-              <label className="flex-1 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="type" 
-                    value="found" 
-                    checked={form.type === "found"}
-                    onChange={(e) => updateField("type", e.target.value)}
-                    className="peer sr-only"
-                  />
-                  <div className="rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-center font-medium text-ruin-muted peer-checked:border-[#00C9A7] peer-checked:text-[#00C9A7] transition-colors">
-                      I Found Something
-                  </div>
-              </label>
+          <div className="mb-6">
+            <ToggleGroup
+              options={[
+                {
+                  value: "lost",
+                  label: "I Lost Something",
+                },
+                {
+                  value: "found",
+                  label: "I Found Something",
+                },
+              ]}
+              value={form.type}
+              onChange={(val) => updateField("type", val)}
+            />
           </div>
 
           <label className="block mt-4">
@@ -148,7 +157,7 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
               required
               value={form.title}
               onChange={(e) => updateField("title", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
               placeholder="Black Water Bottle"
             />
           </label>
@@ -160,7 +169,7 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
               rows={3}
               value={form.description}
               onChange={(e) => updateField("description", e.target.value)}
-              className="mt-2 w-full resize-none rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              className="mt-2 w-full resize-none rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
               placeholder="Brand, size, unique marks, etc."
             />
           </label>
@@ -171,7 +180,7 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
               required
               value={form.locationFoundLost}
               onChange={(e) => updateField("locationFoundLost", e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
               placeholder="Library 2nd Floor / Cafeteria"
             />
           </label>
@@ -185,6 +194,8 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
               referenceId={isEditing ? initialData.id : null}
               onUpload={(urls) => updateField("imageUrls", urls)}
               onRemove={(url) => updateField("imageUrls", form.imageUrls.filter(u => u !== url))}
+              deferredUpload={true}
+              onPendingFilesChange={setPendingFiles}
             />
           </div>
         </div>
@@ -194,5 +205,6 @@ export default function PostLostFoundModal({ open, onClose, onSubmit, initialDat
         </Button>
       </form>
     </div>
+    </>
   );
 }

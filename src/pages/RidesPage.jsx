@@ -7,7 +7,11 @@ import RideCard from "../components/rides/RideCard";
 import PostRideModal from "../components/rides/PostRideModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import FilterPillGroup from "../components/ui/FilterPillGroup";
 import { getCurrentUserId } from "../utils/ownership";
+import SkeletonCard from "../components/ui/SkeletonCard";
+import EmptyState from "../components/ui/EmptyState";
+import { Car } from "lucide-react";
 
 const VEHICLE_TYPES = ["All", "auto", "cab", "car", "bike", "other"];
 
@@ -70,7 +74,7 @@ export default function RidesPage() {
             <h1 className="font-heading text-5xl font-bold leading-none text-ruin-text sm:text-6xl lg:text-7xl">
               Rides
             </h1>
-            <p className="mt-4 text-base text-ruin-muted sm:text-lg">Share rides, split fare, save time.</p>
+            <p className="mt-4 text-base text-gray-300 sm:text-lg">Share rides, split fare, save time.</p>
           </div>
 
           <Button className="sm:mt-2" variant="orange" onClick={handlePostClick}>
@@ -78,27 +82,29 @@ export default function RidesPage() {
           </Button>
         </header>
 
-        <div className="-mx-4 mt-10 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="flex snap-x snap-mandatory gap-3 pb-2">
-            {VEHICLE_TYPES.map((type) => (
-              <Tag
-                key={type}
-                active={selectedVehicle === type}
-                className="capitalize"
-                onClick={() => setSelectedVehicle(type)}
-              >
-                {type}
-              </Tag>
-            ))}
-          </div>
-        </div>
+        <FilterPillGroup>
+          {VEHICLE_TYPES.map((type) => (
+            <Tag
+              key={type}
+              active={selectedVehicle === type}
+              className="capitalize"
+              onClick={() => setSelectedVehicle(type)}
+            >
+              {type}
+            </Tag>
+          ))}
+        </FilterPillGroup>
         
         {isLoading ? (
-            <div className="mt-12 text-center text-ruin-muted">Loading rides...</div>
+            <SkeletonCard count={6} />
         ) : rides.length === 0 ? (
-            <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
-                No rides found.
-            </div>
+            <EmptyState 
+              icon={Car}
+              title="No rides found"
+              description="There are currently no rides available. Be the first to offer one!"
+              actionLabel="+ Offer a Ride"
+              onAction={handlePostClick}
+            />
         ) : (
             <ListingSections
               items={rides}

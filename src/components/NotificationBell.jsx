@@ -372,9 +372,22 @@ export default function NotificationBell() {
             </button>
           </div>
 
-          <div className="max-h-96 overflow-y-auto">
-            {isLoading ? (
-              <p className="px-4 py-6 text-center text-sm text-ruin-muted">Loading...</p>
+          <div className="max-h-96 overflow-y-auto custom-scrollbar">
+            {isLoading && notifications.length === 0 ? (
+              <div className="space-y-0">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="block w-full border-b border-ruin-border px-4 py-3 last:border-b-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="h-4 w-1/2 animate-pulse rounded bg-ruin-border/40" />
+                      <div className="h-3 w-16 shrink-0 animate-pulse rounded bg-ruin-border/20" />
+                    </div>
+                    <div className="mt-2 space-y-1.5">
+                      <div className="h-3 w-full animate-pulse rounded bg-ruin-border/20" />
+                      <div className="h-3 w-4/5 animate-pulse rounded bg-ruin-border/20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : error ? (
               <p className="px-4 py-6 text-center text-sm text-ruin-magenta">{error}</p>
             ) : notifications.length === 0 ? (

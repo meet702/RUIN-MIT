@@ -7,7 +7,11 @@ import LostFoundCard from "../components/lostfound/LostFoundCard";
 import PostLostFoundModal from "../components/lostfound/PostLostFoundModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import FilterPillGroup from "../components/ui/FilterPillGroup";
 import { getCurrentUserId } from "../utils/ownership";
+import SkeletonCard from "../components/ui/SkeletonCard";
+import EmptyState from "../components/ui/EmptyState";
+import { Search } from "lucide-react";
 
 export default function LostFoundPage() {
   const [posts, setPosts] = useState([]);
@@ -68,7 +72,7 @@ export default function LostFoundPage() {
             <h1 className="font-heading text-5xl font-bold leading-none text-ruin-text sm:text-6xl lg:text-7xl">
               Lost & Found
             </h1>
-            <p className="mt-4 text-base text-ruin-muted sm:text-lg">Reunite items with their owners.</p>
+            <p className="mt-4 text-base text-gray-300 sm:text-lg">Reunite items with their owners.</p>
           </div>
 
           <Button className="sm:mt-2" variant="orange" onClick={handlePostClick}>
@@ -76,27 +80,29 @@ export default function LostFoundPage() {
           </Button>
         </header>
 
-        <div className="-mx-4 mt-10 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="flex snap-x snap-mandatory gap-3 pb-2">
-            {["All", "lost", "found"].map((type) => (
-              <Tag
-                key={type}
-                active={selectedType === type}
-                className="capitalize"
-                onClick={() => setSelectedType(type)}
-              >
-                {type}
-              </Tag>
-            ))}
-          </div>
-        </div>
+        <FilterPillGroup>
+          {["All", "lost", "found"].map((type) => (
+            <Tag
+              key={type}
+              active={selectedType === type}
+              className="capitalize"
+              onClick={() => setSelectedType(type)}
+            >
+              {type}
+            </Tag>
+          ))}
+        </FilterPillGroup>
         
         {isLoading ? (
-            <div className="mt-12 text-center text-ruin-muted">Loading posts...</div>
+            <SkeletonCard count={6} />
         ) : posts.length === 0 ? (
-            <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
-                No items found.
-            </div>
+            <EmptyState 
+              icon={Search}
+              title="No items found"
+              description="There are currently no lost & found items. Report a new item if needed."
+              actionLabel="+ Report Item"
+              onAction={handlePostClick}
+            />
         ) : (
             <ListingSections
               items={posts}

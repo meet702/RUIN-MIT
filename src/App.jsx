@@ -1,9 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
 import Navbar from "./components/layout/Navbar";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 import ChatPopup from "./components/chat/ChatPopup";
+import TopProgressBar from "./components/ui/TopProgressBar";
 import { useAuth } from "./context/AuthContext";
 
 // Pages
@@ -26,12 +27,14 @@ import ProfilePage from "./pages/ProfilePage";
 
 function AppShell() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const isProfilePage = location.pathname === "/profile";
 
   return (
     <>
       <Navbar />
       <Outlet />
-      {isAuthenticated && <ChatPopup />}
+      {isAuthenticated && !isProfilePage && <ChatPopup />}
     </>
   );
 }
@@ -41,6 +44,7 @@ export default function App() {
     <AuthProvider>
       <ChatProvider>
         <BrowserRouter>
+          <TopProgressBar />
           <Routes>
           {/* Public Auth Routes */}
           <Route path="/login" element={<LoginPage />} />

@@ -2,11 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  CircleHelp,
+  ExternalLink,
   KeyRound,
-  LifeBuoy,
   LogOut,
-  Mail,
   MessageSquareText,
   ShieldCheck,
 } from "lucide-react";
@@ -14,10 +12,11 @@ import { authService } from "../api/authService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import Button from "../components/ui/Button";
+import ContactFeedbackModal from "../components/profile/ContactFeedbackModal";
 
 const SUPPORT_EMAIL = "meetchhabhaiya10@gmail.com";
 
-function ProfileAction({ as: Component = Link, icon: Icon, title, description, className = "", ...props }) {
+function ProfileAction({ as: Component = Link, icon: Icon, actionIcon: ActionIcon = ArrowRight, title, description, className = "", ...props }) {
   return (
     <Component
       className={`group flex items-center gap-4 rounded-lg border border-ruin-border bg-ruin-card p-4 text-left transition hover:border-ruin-orange/70 hover:bg-ruin-background ${className}`}
@@ -30,7 +29,7 @@ function ProfileAction({ as: Component = Link, icon: Icon, title, description, c
         <span className="block font-heading text-base font-semibold text-ruin-text">{title}</span>
         <span className="mt-1 block text-sm text-ruin-muted">{description}</span>
       </span>
-      <ArrowRight size={18} className="shrink-0 text-ruin-muted transition group-hover:text-ruin-orange" />
+      <ActionIcon size={18} className="shrink-0 text-ruin-muted transition group-hover:text-ruin-orange" />
     </Component>
   );
 }
@@ -41,6 +40,7 @@ export default function ProfilePage() {
   const [resetStatus, setResetStatus] = useState("");
   const [resetError, setResetError] = useState("");
   const [isResetting, setIsResetting] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const handleResetPassword = async () => {
     if (!user?.email) {
@@ -76,7 +76,7 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-ruin-background px-4 py-8 text-ruin-text sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-3xl">
         <section className="rounded-lg border border-ruin-border bg-ruin-card p-6 sm:p-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-5">
@@ -85,8 +85,8 @@ export default function ProfilePage() {
               </div>
               <div>
                 <h1 className="font-heading text-3xl font-bold text-ruin-text">{user?.fullName || "User"}</h1>
-                <p className="mt-1 text-sm text-ruin-muted">{user?.email}</p>
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-ruin-orange/25 bg-ruin-orange/10 px-3 py-1 text-xs font-semibold text-ruin-orange">
+                <p className="text-sm text-ruin-muted">{user?.email}</p>
+                <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-ruin-orange/25 bg-ruin-orange/10 px-3 py-1 text-xs font-semibold text-ruin-orange">
                   <ShieldCheck size={14} />
                   {role} account
                 </div>
@@ -99,26 +99,9 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
-          <ProfileAction
-            as="a"
-            href={`mailto:${user?.email || ""}`}
-            icon={Mail}
-            title="College Email"
-            description={user?.email || "No email saved"}
-          />
-          <ProfileAction
-            as="a"
-            href={`mailto:${SUPPORT_EMAIL}?subject=RuinMIT%20Account%20Help`}
-            icon={ShieldCheck}
-            title="Account Help"
-            description="Get help with login, verification, or your account."
-          />
-        </section>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-8 space-y-8">
           <section>
-            <h2 className="mb-3 font-heading text-xl font-bold text-ruin-text">Account</h2>
+            <h2 className="mb-4 font-heading text-xl font-bold text-ruin-text">Account & Security</h2>
             <div className="space-y-3">
               <button
                 type="button"
@@ -137,6 +120,15 @@ export default function ProfilePage() {
                 </span>
                 <ArrowRight size={18} className="shrink-0 text-ruin-muted transition group-hover:text-ruin-orange" />
               </button>
+              
+              <ProfileAction
+                as="a"
+                href={`mailto:${SUPPORT_EMAIL}?subject=RuinMIT%20Account%20Help`}
+                icon={ShieldCheck}
+                actionIcon={ExternalLink}
+                title="Account Help"
+                description="Get help with login, verification, or your account."
+              />
             </div>
 
             {(resetStatus || resetError) && (
@@ -147,33 +139,23 @@ export default function ProfilePage() {
           </section>
 
           <section>
-            <h2 className="mb-3 font-heading text-xl font-bold text-ruin-text">Help</h2>
+            <h2 className="mb-4 font-heading text-xl font-bold text-ruin-text">Support & Feedback</h2>
             <div className="space-y-3">
               <ProfileAction
-                as="a"
-                href={`mailto:${SUPPORT_EMAIL}?subject=RuinMIT%20Support%20Request`}
-                icon={LifeBuoy}
-                title="Help & Support"
-                description={SUPPORT_EMAIL}
-              />
-              <ProfileAction
-                as="a"
-                href={`mailto:${SUPPORT_EMAIL}?subject=RuinMIT%20Feedback&body=Hi%20RuinMIT%20team%2C%0A%0AI%20would%20like%20to%20suggest%3A%0A`}
+                as="button"
+                type="button"
+                onClick={() => setIsContactModalOpen(true)}
                 icon={MessageSquareText}
-                title="Send Feedback"
-                description="Suggest changes, bugs, or improvements."
-              />
-              <ProfileAction
-                as="a"
-                href={`mailto:${SUPPORT_EMAIL}?subject=RuinMIT%20Report%20a%20Problem`}
-                icon={CircleHelp}
-                title="Report a Problem"
-                description="Tell us if something feels broken or confusing."
+                actionIcon={ArrowRight}
+                title="Contact & Feedback"
+                description="Get help, share feedback, or report an issue."
+                className="w-full"
               />
             </div>
           </section>
         </div>
       </div>
+      <ContactFeedbackModal open={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} />
     </main>
   );
 }
