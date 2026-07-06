@@ -40,5 +40,10 @@ export const rideService = {
   updateRideStatus: async (id, status) => {
     const response = await api.patch(`/rides/${id}/status`, { status });
     return response.data;
+  },
+
+  deleteRide: async (id) => {
+    const response = await api.delete(`/rides/${id}`);
+    return response.data;
   }
 };

@@ -152,9 +152,6 @@ export default function GigDetailPage() {
   const headerActions = isPoster ? (
     <>
       <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
-      {gig.status === "open" && (
-          <button onClick={() => handleStatusUpdate("cancelled")} className="text-sm font-medium text-ruin-magenta px-3 py-1 border border-ruin-magenta rounded-md">Cancel Gig</button>
-      )}
       {gig.status === "in_progress" && (
           <button onClick={() => handleStatusUpdate("completed")} className="text-sm font-medium text-ruin-background bg-[#00C9A7] px-3 py-1 rounded-md hover:bg-teal-500 transition-colors">Mark Completed</button>
       )}

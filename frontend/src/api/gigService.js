@@ -39,5 +39,10 @@ export const gigService = {
   updateGigStatus: async (id, status) => {
     const response = await api.patch(`/gigs/${id}/status`, { status });
     return response.data;
+  },
+
+  deleteGig: async (id) => {
+    const response = await api.delete(`/gigs/${id}`);
+    return response.data;
   }
 };
