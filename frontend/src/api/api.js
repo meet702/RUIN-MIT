@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -39,7 +39,7 @@ api.interceptors.response.use(
         }
 
         // Call the refresh endpoint directly with axios to avoid circular interceptor issues
-        const response = await axios.post("/api/auth/refresh", { refreshToken });
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/refresh`, { refreshToken });
         
         if (response.data.success && response.data.data) {
           const { accessToken, refreshToken: newRefreshToken } = response.data.data;
