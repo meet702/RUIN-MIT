@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { uploadService } from '../../api/uploadService';
 import { api } from '../../api/api';
 import { X, UploadCloud, Loader2 } from 'lucide-react';
@@ -9,14 +9,32 @@ export default function ImageUploader({
   currentImageUrls = [], 
   maxFiles = 5,
   deleteEndpoint,
-  referenceId
+  referenceId,
+  deferredUpload = false,
+  onPendingFilesChange
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState({}); // { [fileName]: boolean }
   const [deletingFiles, setDeletingFiles] = useState({}); // { [url]: boolean }
   const [newlyUploadedUrls, setNewlyUploadedUrls] = useState([]);
   const [error, setError] = useState('');
+  
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [pendingPreviews, setPendingPreviews] = useState([]);
+  
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      pendingPreviews.forEach(p => URL.revokeObjectURL(p.url));
+    };
+  }, [pendingPreviews]);
+
+  useEffect(() => {
+    if (deferredUpload && onPendingFilesChange) {
+      onPendingFilesChange(pendingFiles);
+    }
+  }, [pendingFiles, deferredUpload]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -45,7 +63,8 @@ export default function ImageUploader({
   const handleFiles = async (files) => {
     setError('');
     
-    const remainingSlots = maxFiles - currentImageUrls.length;
+    const currentTotal = currentImageUrls.length + pendingFiles.length;
+    const remainingSlots = maxFiles - currentTotal;
     const filesToUpload = files.slice(0, remainingSlots);
 
     if (files.length > remainingSlots) {
@@ -61,6 +80,20 @@ export default function ImageUploader({
       
       return isValidType && isValidSize;
     });
+
+    if (validFiles.length === 0) return;
+
+    if (deferredUpload) {
+      const newPreviews = validFiles.map(f => ({ 
+        file: f, 
+        url: URL.createObjectURL(f), 
+        id: Math.random().toString(36).substring(7) 
+      }));
+      setPendingFiles(prev => [...prev, ...validFiles]);
+      setPendingPreviews(prev => [...prev, ...newPreviews]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
     const uploadPromises = validFiles.map(async (file) => {
       setUploadingFiles(prev => ({ ...prev, [file.name]: true }));
@@ -88,6 +121,15 @@ export default function ImageUploader({
     // Reset input so the same file can be selected again if needed
     if (fileInputRef.current) {
         fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemovePending = (id) => {
+    const previewToRemove = pendingPreviews.find(p => p.id === id);
+    if (previewToRemove) {
+      URL.revokeObjectURL(previewToRemove.url);
+      setPendingFiles(prev => prev.filter(f => f !== previewToRemove.file));
+      setPendingPreviews(prev => prev.filter(p => p.id !== id));
     }
   };
 
@@ -131,7 +173,7 @@ export default function ImageUploader({
         </div>
       )}
 
-      {currentImageUrls.length < maxFiles && (
+      {currentImageUrls.length + pendingFiles.length < maxFiles && (
         <div
           className={`relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-colors ${
             isDragging
@@ -163,7 +205,7 @@ export default function ImageUploader({
 
       <div className="flex items-center justify-between">
          <span className="text-xs font-medium text-ruin-muted">
-            {currentImageUrls.length} / {maxFiles} images uploaded
+            {currentImageUrls.length + pendingFiles.length} / {maxFiles} images uploaded
          </span>
          {Object.keys(uploadingFiles).length > 0 && (
              <span className="text-xs text-ruin-orange flex items-center gap-1">
@@ -172,7 +214,7 @@ export default function ImageUploader({
          )}
       </div>
 
-      {currentImageUrls.length > 0 && (
+      {(currentImageUrls.length > 0 || pendingPreviews.length > 0) && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {currentImageUrls.map((url, index) => (
             <div key={url} className="group relative aspect-square rounded-lg border border-ruin-border bg-black overflow-hidden">
@@ -192,6 +234,26 @@ export default function ImageUploader({
                 aria-label="Remove image"
               >
                 {deletingFiles[url] ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-4 w-4" />}
+              </button>
+            </div>
+          ))}
+          {pendingPreviews.map((preview, index) => (
+            <div key={preview.id} className="group relative aspect-square rounded-lg border border-ruin-border bg-black overflow-hidden">
+              <img
+                src={preview.url}
+                alt={`Pending ${index + 1}`}
+                className="h-full w-full object-contain transition-opacity group-hover:opacity-80"
+              />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemovePending(preview.id);
+                }}
+                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-all hover:bg-ruin-magenta group-hover:opacity-100"
+                aria-label="Remove pending image"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
           ))}

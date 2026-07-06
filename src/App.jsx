@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
 import Navbar from "./components/layout/Navbar";
@@ -27,12 +27,14 @@ import ProfilePage from "./pages/ProfilePage";
 
 function AppShell() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const isProfilePage = location.pathname === "/profile";
 
   return (
     <>
       <Navbar />
       <Outlet />
-      {isAuthenticated && <ChatPopup />}
+      {isAuthenticated && !isProfilePage && <ChatPopup />}
     </>
   );
 }

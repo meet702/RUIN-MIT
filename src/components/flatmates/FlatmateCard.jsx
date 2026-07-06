@@ -22,7 +22,7 @@ export default function FlatmateCard({ listing, index, isOwnPost = false }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
+      <div className={`relative h-48 flex items-center justify-center border-b ${listing.imageUrls && listing.imageUrls.length > 0 ? "bg-ruin-background border-ruin-border" : "bg-ruin-card/40 border-ruin-border border-dashed"}`}>
           {listing.imageUrls && listing.imageUrls.length > 0 ? (
               <>
                   <img src={listing.imageUrls[0]} alt={listing.title} className="h-full w-full object-contain" />
@@ -77,9 +77,9 @@ export default function FlatmateCard({ listing, index, isOwnPost = false }) {
             to={`/flatmates/${listing.id}`}
             className="mt-5 w-full rounded-lg border px-4 py-3 font-heading text-sm font-semibold text-center block transition-colors"
             style={{
-              borderColor: isHovered ? accent : "#2A2A2A",
-              color: isHovered ? accent : "#E5E5E5",
-              backgroundColor: isHovered ? `${accent}0A` : "transparent",
+              borderColor: isHovered ? accent : "#3A3A3A",
+              color: isHovered ? accent : "#F0EDE6",
+              backgroundColor: isHovered ? `${accent}1A` : "rgba(255, 255, 255, 0.05)",
             }}
           >
             View Listing

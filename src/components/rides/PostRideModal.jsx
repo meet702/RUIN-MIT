@@ -3,6 +3,9 @@ import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import DatePickerField from "../ui/DatePickerField";
 import TimePickerField from "../ui/TimePickerField";
+import CurrencyInput from "../ui/CurrencyInput";
+import ToggleGroup from "../ui/ToggleGroup";
+import ActionLoader from "../ui/ActionLoader";
 
 const OFFER_VEHICLES = ["bike", "auto", "cab", "car"];
 const CAR_SEATS = ["1", "2", "3"];
@@ -38,7 +41,7 @@ const initialForm = {
 };
 
 const inputBaseClasses =
-  "mt-2 w-full rounded-lg border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange";
+  "mt-2 w-full rounded-lg border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange";
 
 function formatFare(value) {
   const amount = Number(value);
@@ -294,13 +297,15 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onMouseDown={(e) => e.target === e.currentTarget && closeModal()}
-    >
+    <>
+      {isLoading && <ActionLoader message={isEditing ? "Saving changes..." : "Posting ride..."} />}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        onMouseDown={(e) => e.target === e.currentTarget && closeModal()}
+      >
       <form
         noValidate
-        className={`w-full max-w-[520px] max-h-[90vh] overflow-y-auto rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
+        className={`w-full max-w-[520px] max-h-[90vh] overflow-y-auto custom-scrollbar rounded-2xl border border-ruin-border bg-ruin-card p-6 sm:p-8 ${
           isClosing ? "modal-exit" : "modal-enter"
         }`}
         onSubmit={handleSubmit}
@@ -319,31 +324,23 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
           <div className="mb-4 rounded bg-ruin-magenta/10 p-3 text-sm text-ruin-magenta">{error}</div>
         )}
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setRideMode("offer")}
-            className={`rounded-full border px-4 py-3 text-left transition ${
-              !isCoPassengerMode
-                ? "border-ruin-orange bg-ruin-orange text-ruin-background"
-                : "border-ruin-border bg-transparent text-ruin-muted hover:text-ruin-text"
-            }`}
-          >
-            <span className="block font-heading text-sm font-bold">Offering a Ride</span>
-            <span className="mt-1 block text-xs leading-snug opacity-90">I'm going somewhere and can take someone</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setRideMode("coPassenger")}
-            className={`rounded-full border px-4 py-3 text-left transition ${
-              isCoPassengerMode
-                ? "border-ruin-orange bg-ruin-orange text-ruin-background"
-                : "border-ruin-border bg-transparent text-ruin-muted hover:text-ruin-text"
-            }`}
-          >
-            <span className="block font-heading text-sm font-bold">Looking for Co-passenger</span>
-            <span className="mt-1 block text-xs leading-snug opacity-90">I'm booking a ride and want to split the cost</span>
-          </button>
+        <div className="mb-6">
+          <ToggleGroup
+            options={[
+              {
+                value: "offer",
+                label: "Offering a Ride",
+                description: "I'm going somewhere and can take someone",
+              },
+              {
+                value: "coPassenger",
+                label: "Looking for Co-passenger",
+                description: "I'm booking a ride and want to split the cost",
+              },
+            ]}
+            value={form.rideMode}
+            onChange={setRideMode}
+          />
         </div>
 
         <div className="space-y-4">
@@ -429,14 +426,12 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
               </div>
 
               <label className="block">
-                <span className="text-sm font-medium text-ruin-text">Fare per person in {"\u20B9"}</span>
-                <input
-                  type="number"
-                  min="1"
+                <span className="text-sm font-medium text-ruin-text">Fare per person</span>
+                <CurrencyInput
                   value={form.farePerPerson}
-                  onChange={(e) => updateField("farePerPerson", e.target.value)}
-                  className={`${inputBaseClasses} ${fieldErrors.farePerPerson ? "border-ruin-magenta" : "border-ruin-border"}`}
+                  onChange={(value) => updateField("farePerPerson", value)}
                   placeholder="100"
+                  error={!!fieldErrors.farePerPerson}
                 />
                 <FieldError message={fieldErrors.farePerPerson} />
               </label>
@@ -476,14 +471,12 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
               </div>
 
               <label className="block">
-                <span className="text-sm font-medium text-ruin-text">Estimated Total Fare in {"\u20B9"}</span>
-                <input
-                  type="number"
-                  min="1"
+                <span className="text-sm font-medium text-ruin-text">Estimated Total Fare</span>
+                <CurrencyInput
                   value={form.estimatedTotalFare}
-                  onChange={(e) => updateField("estimatedTotalFare", e.target.value)}
-                  className={`${inputBaseClasses} ${fieldErrors.estimatedTotalFare ? "border-ruin-magenta" : "border-ruin-border"}`}
+                  onChange={(value) => updateField("estimatedTotalFare", value)}
                   placeholder="180"
+                  error={!!fieldErrors.estimatedTotalFare}
                 />
                 <FieldError message={fieldErrors.estimatedTotalFare} />
                 <p className="mt-1.5 text-xs font-medium text-[#00C9A7]">
@@ -499,7 +492,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
               rows={2}
               value={form.notes}
               onChange={(e) => updateField("notes", e.target.value)}
-              className="mt-2 w-full resize-none rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none focus:border-ruin-orange"
+              className="mt-2 w-full resize-none rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition duration-200 placeholder:text-ruin-muted focus:border-ruin-orange"
               placeholder="No heavy luggage please"
             />
           </label>
@@ -518,5 +511,6 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
         </Button>
       </form>
     </div>
+    </>
   );
 }

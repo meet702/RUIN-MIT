@@ -9,7 +9,7 @@ function SectionHeading({ children }) {
 }
 
 function ListingGrid({ children, className = "", topMargin = "mt-4" }) {
-  const gridClassName = className || "grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+  const gridClassName = className || "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6";
 
   return (
     <div className={`${topMargin} grid ${gridClassName}`}>

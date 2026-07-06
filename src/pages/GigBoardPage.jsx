@@ -9,6 +9,8 @@ import { useGigs } from "../hooks/useGigs";
 import { useAuth } from "../context/AuthContext";
 import { getCurrentUserId } from "../utils/ownership";
 import SkeletonCard from "../components/ui/SkeletonCard";
+import EmptyState from "../components/ui/EmptyState";
+import { Search } from "lucide-react";
 
 export default function GigBoardPage() {
   const { gigs, selectedStatus, selectStatus, addGig, isExiting, isLoading } = useGigs();
@@ -33,7 +35,7 @@ export default function GigBoardPage() {
             <h1 className="font-heading text-5xl font-bold leading-none text-ruin-text sm:text-6xl lg:text-7xl">
               The Gig Board
             </h1>
-            <p className="mt-4 text-base text-ruin-muted sm:text-lg">Post work. Get paid. Get it done.</p>
+            <p className="mt-4 text-base text-gray-300 sm:text-lg">Post work. Get paid. Get it done.</p>
           </div>
 
           <Button className="sm:mt-2" onClick={handlePostClick}>
@@ -44,17 +46,20 @@ export default function GigBoardPage() {
         <GigFilters selectedStatus={selectedStatus} onSelectStatus={selectStatus} />
         
         {isLoading ? (
-            <SkeletonCard count={6} gridClassName="grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3" />
+            <SkeletonCard count={6} />
         ) : gigs.length === 0 ? (
-            <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
-                No gigs found in this category.
-            </div>
+            <EmptyState 
+              icon={Search}
+              title="No gigs found"
+              description="There are currently no gigs in this category. Be the first to post one!"
+              actionLabel="+ Post a Gig"
+              onAction={handlePostClick}
+            />
         ) : (
             <div className={isExiting ? "gig-grid-exit" : ""}>
               <ListingSections
                 items={gigs}
                 currentUserId={currentUserId}
-                gridClassName="grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3"
                 renderCard={(gig, index, isOwnPost) => (
                   <GigCard key={gig.id} gig={gig} index={index} isOwnPost={isOwnPost} />
                 )}

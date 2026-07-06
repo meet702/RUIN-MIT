@@ -64,6 +64,29 @@ select {
   border-radius: 999px;
 }
 
+/* ===== Global thin dark scrollbars ===== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(122, 118, 114, 0.35);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(242, 101, 34, 0.55);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(122, 118, 114, 0.35) transparent;
+}
+
 .chip-enter {
   animation: chip-slide-in 300ms ease-out both;
 }

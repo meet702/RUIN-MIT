@@ -7,8 +7,11 @@ import FlatmateCard from "../components/flatmates/FlatmateCard";
 import PostFlatmateModal from "../components/flatmates/PostFlatmateModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
+import FilterPillGroup from "../components/ui/FilterPillGroup";
 import { getCurrentUserId } from "../utils/ownership";
 import SkeletonCard from "../components/ui/SkeletonCard";
+import EmptyState from "../components/ui/EmptyState";
+import { Home } from "lucide-react";
 
 export default function FlatmatePage() {
   const [listings, setListings] = useState([]);
@@ -67,7 +70,7 @@ export default function FlatmatePage() {
             <h1 className="font-heading text-5xl font-bold leading-none text-ruin-text sm:text-6xl lg:text-7xl">
               Flatmates
             </h1>
-            <p className="mt-4 text-base text-ruin-muted sm:text-lg">Find your next roommate or room.</p>
+            <p className="mt-4 text-base text-gray-300 sm:text-lg">Find your next roommate or room.</p>
           </div>
 
           <Button className="sm:mt-2" variant="orange" onClick={handlePostClick}>
@@ -75,27 +78,29 @@ export default function FlatmatePage() {
           </Button>
         </header>
 
-        <div className="-mx-4 mt-10 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="flex snap-x snap-mandatory gap-3 pb-2">
-            {["All", "open", "closed"].map((status) => (
-              <Tag
-                key={status}
-                active={selectedStatus === status}
-                className="capitalize"
-                onClick={() => setSelectedStatus(status)}
-              >
-                {status}
-              </Tag>
-            ))}
-          </div>
-        </div>
+        <FilterPillGroup>
+          {["All", "open", "closed"].map((status) => (
+            <Tag
+              key={status}
+              active={selectedStatus === status}
+              className="capitalize"
+              onClick={() => setSelectedStatus(status)}
+            >
+              {status}
+            </Tag>
+          ))}
+        </FilterPillGroup>
         
         {isLoading ? (
             <SkeletonCard count={6} />
         ) : listings.length === 0 ? (
-            <div className="mt-12 text-center p-12 border border-ruin-border rounded-xl bg-ruin-card/50 text-ruin-muted">
-                No listings found.
-            </div>
+            <EmptyState 
+              icon={Home}
+              title="No listings found"
+              description="There are currently no flatmate listings. Be the first to post one!"
+              actionLabel="+ Post Listing"
+              onAction={handlePostClick}
+            />
         ) : (
             <ListingSections
               items={listings}

@@ -5,8 +5,10 @@ import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import ChatButton from "../components/chat/ChatButton";
 import PostLostFoundModal from "../components/lostfound/PostLostFoundModal";
-import { Search, Info } from "lucide-react";
+import { Search, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import SkeletonDetail from "../components/ui/SkeletonDetail";
+import DetailPageLayout from "../components/layout/DetailPageLayout";
+import ActionLoader from "../components/ui/ActionLoader";
 
 export default function LostFoundDetailPage() {
   const { id } = useParams();
@@ -17,6 +19,7 @@ export default function LostFoundDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchPost = async () => {
     setIsLoading(true);
@@ -64,16 +67,24 @@ export default function LostFoundDetailPage() {
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
+        setIsDeleting(true);
         try {
             const response = await lostFoundService.deletePost(id);
             if (response.success) {
                 navigate("/lost-found");
+            } else {
+                alert(response.message || "Failed to delete post.");
+                setIsDeleting(false);
             }
         } catch (err) {
             console.error("Failed to delete", err);
+            alert("Failed to delete post.");
+            setIsDeleting(false);
         }
     }
   };
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   if (isLoading) return <SkeletonDetail />;
   if (error || !post) return <div className="p-8 text-center text-ruin-magenta">{error || "Post not found"}</div>;
@@ -83,114 +94,157 @@ export default function LostFoundDetailPage() {
   const isOwner = user?.id && posterId && String(user.id) === String(posterId);
   const isLost = post.type === "lost";
   const accent = isLost ? "#F26522" : "#00C9A7";
-  const imageUrls = post.imageUrls || post.images?.map((image) => image.imageUrl) || [];
+  const rawImageUrls = post.imageUrls || post.images?.map((image) => image.imageUrl) || [];
+  
+  // Filter out any raw path strings that might have leaked from the backend
+  const validImageUrls = rawImageUrls.filter(url => url && (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')));
 
-  return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 font-body">
-      <div className="mb-6 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="text-ruin-muted hover:text-ruin-text transition-colors">
-          &larr; Back
-        </button>
-        {isOwner && (
-          <div className="flex gap-2">
-            <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
-            {post.status === "open" && (
-                <button onClick={() => handleStatusUpdate("resolved")} className="text-sm font-medium text-ruin-background bg-ruin-orange px-3 py-1 rounded-md">Mark as Resolved</button>
-            )}
-            <button onClick={handleDelete} className="text-sm font-medium text-ruin-magenta px-3 py-1 border border-ruin-magenta rounded-md hover:bg-ruin-magenta/10">Delete</button>
-          </div>
-        )}
-      </div>
+  const handleNextImage = () => {
+    setActiveImageIndex((prev) => (prev === validImageUrls.length - 1 ? 0 : prev + 1));
+  };
 
-      <div className="rounded-2xl border border-ruin-border bg-ruin-card overflow-hidden">
-        {imageUrls.length > 0 ? (
-            <div className="flex w-full overflow-x-auto snap-x snap-mandatory bg-black p-4 gap-4 border-b border-ruin-border">
-                {imageUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0 w-[85%] md:w-[60%] h-[300px] snap-center flex items-center justify-center rounded-xl overflow-hidden bg-ruin-background shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
+  const handlePrevImage = () => {
+    setActiveImageIndex((prev) => (prev === 0 ? validImageUrls.length - 1 : prev - 1));
+  };
+
+  const headerActions = isOwner ? (
+    <>
+      <button onClick={() => setIsEditModalOpen(true)} className="text-sm font-medium text-ruin-text px-3 py-1 border border-ruin-border rounded-md hover:border-ruin-orange hover:text-ruin-orange transition-colors">Edit</button>
+      {post.status === "open" && (
+          <button onClick={() => handleStatusUpdate("resolved")} className="text-sm font-medium text-ruin-background bg-[#00C9A7] px-3 py-1 rounded-md hover:bg-teal-500 transition-colors">Mark as Resolved</button>
+      )}
+      <button onClick={handleDelete} className="text-sm font-medium text-ruin-magenta px-3 py-1 border border-ruin-magenta rounded-md hover:bg-ruin-magenta/10 transition-colors">Delete</button>
+    </>
+  ) : null;
+
+  const heroImage = validImageUrls.length > 0 ? (
+    <div className="relative w-full bg-black border-b border-ruin-border group">
+        <div className="flex w-full overflow-hidden h-[300px] relative items-center justify-center">
+            {validImageUrls.map((url, i) => (
+                <div 
+                    key={i} 
+                    className={`absolute inset-0 transition-opacity duration-300 flex items-center justify-center p-4 ${i === activeImageIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                >
+                    <a href={url} target="_blank" rel="noreferrer" className="w-[85%] md:w-[60%] h-full flex items-center justify-center rounded-xl overflow-hidden bg-ruin-background shadow-lg border border-ruin-border/50 hover:border-ruin-orange/50 transition-colors">
                         <img src={url} alt={`${post.title} - ${i + 1}`} className="h-full w-full object-contain" />
                     </a>
-                ))}
-            </div>
-        ) : (
-            <div className="w-full h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
-                {isLost ? <Search size={64} className="text-ruin-muted/50" /> : <Info size={64} className="text-ruin-muted/50" />}
-            </div>
-        )}
-      
-        <div className="p-6 sm:p-8">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex gap-2">
-                <span className="inline-flex items-center rounded-full px-3 py-1 font-heading text-[11px] font-semibold tracking-[0.04em] uppercase" style={{ backgroundColor: `${accent}1A`, color: accent }}>
-                    {post.type}
-                </span>
-                {post.status !== "open" && (
-                    <span className="inline-flex items-center rounded-full px-3 py-1 font-heading text-[11px] font-semibold uppercase bg-ruin-background border border-ruin-border text-ruin-muted">
-                        Resolved
-                    </span>
-                )}
-            </div>
-            <span className="text-sm text-ruin-muted">Posted {new Date(post.createdAt).toLocaleDateString()}</span>
-            </div>
-
-            <h1 className="font-heading text-3xl font-bold text-ruin-text md:text-4xl">{post.title}</h1>
-
-            <div className="mt-8 grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-2 space-y-6">
-                <div>
-                <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Description</h3>
-                <p className="mt-2 text-ruin-text whitespace-pre-wrap">{post.description}</p>
                 </div>
-                
-                <div className="pt-4 border-t border-ruin-border">
-                <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Location</h3>
-                <p className="mt-2 text-ruin-text font-medium">{post.locationFoundLost}</p>
-                </div>
-
-                <div className="pt-4 border-t border-ruin-border">
-                <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Contact Poster</h3>
-                <div className="mt-3 flex items-center gap-3">
-                    <Avatar name={posterName} />
-                    <div>
-                        <span className="text-ruin-text font-medium block">{posterName}</span>
-                        {!isOwner && <span className="text-sm text-ruin-muted">Message or find them on campus</span>}
-                    </div>
-                </div>
-                </div>
-            </div>
-
-            <div className="space-y-6 rounded-xl border border-ruin-border bg-ruin-background p-5 h-fit text-center">
-                <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Status</h3>
-                {post.status === "open" ? (
-                    <div className="mt-2 py-3 px-4 rounded-lg border border-ruin-orange/30 bg-ruin-orange/10 text-ruin-orange font-medium">
-                        Still searching...
-                    </div>
-                ) : (
-                    <div className="mt-2 py-3 px-4 rounded-lg border border-[#00C9A7]/30 bg-[#00C9A7]/10 text-[#00C9A7] font-medium">
-                        Reunited!
-                    </div>
-                )}
-                
-                {!isOwner && post.status === "open" && (
-                    <div className="mt-4 border-t border-ruin-border pt-4">
-                        <ChatButton
-                            otherUserId={posterId}
-                            otherUserName={posterName}
-                            referenceType="lost_found"
-                            referenceId={post.id}
-                            buttonText="Chat with poster"
+            ))}
+        </div>
+        {validImageUrls.length > 1 && (
+            <>
+                <button 
+                    onClick={handlePrevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ruin-orange"
+                >
+                    <ChevronLeft size={20} />
+                </button>
+                <button 
+                    onClick={handleNextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ruin-orange"
+                >
+                    <ChevronRight size={20} />
+                </button>
+                <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">
+                    {validImageUrls.map((_, i) => (
+                        <button 
+                            key={i} 
+                            onClick={() => setActiveImageIndex(i)}
+                            className={`w-2 h-2 rounded-full transition-colors ${i === activeImageIndex ? 'bg-ruin-orange' : 'bg-white/30 hover:bg-white/70'}`}
                         />
-                        {!isAuthenticated && (
-                            <p className="mt-3 text-xs text-ruin-muted">
-                                Log in to message the poster about this item.
-                            </p>
-                        )}
-                    </div>
-                )}
-            </div>
+                    ))}
+                </div>
+            </>
+        )}
+    </div>
+  ) : (
+      <div className="w-full h-48 bg-ruin-background flex items-center justify-center border-b border-ruin-border">
+          {isLost ? <Search size={64} className="text-ruin-muted/50" /> : <Info size={64} className="text-ruin-muted/50" />}
+      </div>
+  );
+
+  const badges = (
+    <>
+        <span className="inline-flex items-center rounded-full px-3 py-1 font-heading text-[11px] font-semibold tracking-[0.04em] uppercase" style={{ backgroundColor: `${accent}1A`, color: accent }}>
+            {post.type}
+        </span>
+        {post.status !== "open" && (
+            <span className="inline-flex items-center rounded-full px-3 py-1 font-heading text-[11px] font-semibold uppercase bg-ruin-background border border-ruin-border text-ruin-muted">
+                Resolved
+            </span>
+        )}
+    </>
+  );
+
+  const mainContent = (
+    <>
+        <div>
+        <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Description</h3>
+        <p className="mt-2 text-ruin-text whitespace-pre-wrap">{post.description}</p>
+        </div>
+        
+        <div className="pt-4 border-t border-ruin-border">
+        <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Location</h3>
+        <p className="mt-2 text-ruin-text font-medium">{post.locationFoundLost}</p>
+        </div>
+
+        <div className="pt-4 border-t border-ruin-border">
+        <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Contact Poster</h3>
+        <div className="mt-3 flex items-center gap-3">
+            <Avatar name={posterName} />
+            <div>
+                <span className="text-ruin-text font-medium block">{posterName}</span>
+                {!isOwner && <span className="text-sm text-ruin-muted">Message or find them on campus</span>}
             </div>
         </div>
-      </div>
+        </div>
+    </>
+  );
 
+  const sidebarContent = (
+    <div className="space-y-6 rounded-xl border border-ruin-border bg-ruin-background p-5 h-fit text-center">
+        <h3 className="text-sm font-medium text-ruin-muted uppercase tracking-wider">Status</h3>
+        {post.status === "open" ? (
+            <div className="mt-2 py-2 px-4 rounded-full border border-ruin-orange/30 bg-ruin-orange/10 text-ruin-orange font-semibold text-sm inline-block">
+                Still searching...
+            </div>
+        ) : (
+            <div className="mt-2 py-2 px-4 rounded-full border border-[#00C9A7]/30 bg-[#00C9A7]/10 text-[#00C9A7] font-semibold text-sm inline-block">
+                Reunited!
+            </div>
+        )}
+        
+        {!isOwner && post.status === "open" && (
+            <div className="mt-4 border-t border-ruin-border pt-4">
+                <ChatButton
+                    otherUserId={posterId}
+                    otherUserName={posterName}
+                    referenceType="lost_found"
+                    referenceId={post.id}
+                    buttonText="Chat with poster"
+                />
+                {!isAuthenticated && (
+                    <p className="mt-3 text-xs text-ruin-muted">
+                        Log in to message the poster about this item.
+                    </p>
+                )}
+            </div>
+        )}
+    </div>
+  );
+
+  return (
+    <>
+      {isDeleting && <ActionLoader message="Deleting post..." />}
+      <DetailPageLayout
+        title={post.title}
+        postedAt={new Date(post.createdAt).toLocaleDateString()}
+        badges={badges}
+        headerActions={headerActions}
+        heroImage={heroImage}
+        mainContent={mainContent}
+        sidebarContent={sidebarContent}
+      />
       <PostLostFoundModal
         open={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -198,6 +252,6 @@ export default function LostFoundDetailPage() {
         initialData={post}
         mode="edit"
       />
-    </div>
+    </>
   );
 }

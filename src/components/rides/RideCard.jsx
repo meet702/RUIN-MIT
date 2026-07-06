@@ -119,9 +119,9 @@ export default function RideCard({ ride, index, isOwnPost = false, currentUser =
         to={`/rides/${ride.id}`}
         className="mt-5 block w-full rounded-lg border px-4 py-3 text-center font-heading text-sm font-semibold transition-colors"
         style={{
-          borderColor: isHovered ? accent : "#2A2A2A",
-          color: isHovered ? accent : "#E5E5E5",
-          backgroundColor: isHovered ? `${accent}0A` : "transparent",
+          borderColor: isHovered ? accent : "#3A3A3A",
+          color: isHovered ? accent : "#F0EDE6",
+          backgroundColor: isHovered ? `${accent}1A` : "rgba(255, 255, 255, 0.05)",
         }}
       >
         View Details
