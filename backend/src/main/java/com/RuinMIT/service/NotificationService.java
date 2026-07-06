@@ -8,6 +8,7 @@ import com.RuinMIT.exception.UnauthorizedException;
 import com.RuinMIT.repository.NotificationRepository;
 import com.RuinMIT.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +55,7 @@ public class NotificationService {
 
         return notificationResponse;
     }
-
+    @Async
     public void sendEmailNotification(String toEmail, String subject, String body) {
         emailService.sendNotificationEmail(toEmail, subject, body);
     }
