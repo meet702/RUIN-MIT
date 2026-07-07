@@ -393,6 +393,12 @@ export default function ChatPopup() {
             ) : (
               <>
                 {error && <div className="mb-3 rounded-md border border-ruin-magenta/40 p-2 text-sm text-ruin-magenta">{error}</div>}
+                {messages.length === 0 && !error && (
+                  <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                    <MessageCircle size={30} className="text-ruin-muted/40" />
+                    <p className="font-heading text-sm font-semibold text-ruin-muted">No messages yet</p>
+                  </div>
+                )}
                 {messages.map((message) => {
                   const mine = message.senderId === currentUserId;
                   return (
