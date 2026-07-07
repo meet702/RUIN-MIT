@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { gigService } from "../api/gigService";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
@@ -27,9 +28,12 @@ export default function GigDetailPage() {
   const [applyError, setApplyError] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [applicantAction, setApplicantAction] = useState(null);
 
-  const fetchGig = async () => {
-    setIsLoading(true);
+  const fetchGig = async ({ showPageLoading = true } = {}) => {
+    if (showPageLoading) {
+      setIsLoading(true);
+    }
     try {
       const response = await gigService.getGigDetails(id);
       if (response.success) {
@@ -40,7 +44,9 @@ export default function GigDetailPage() {
     } catch (err) {
       setError("Failed to load gig details");
     } finally {
-      setIsLoading(false);
+      if (showPageLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -96,24 +102,34 @@ export default function GigDetailPage() {
   };
 
   const handleAcceptApplicant = async (appId) => {
+    if (applicantAction) return;
+
+    setApplicantAction({ appId, type: "accept" });
     try {
       const response = await gigService.acceptApplicant(id, appId);
       if (response.success) {
-        await fetchGig();
+        await fetchGig({ showPageLoading: false });
       }
     } catch (err) {
       console.error("Failed to accept applicant", err);
+    } finally {
+      setApplicantAction(null);
     }
   };
 
   const handleUnacceptApplicant = async (appId) => {
+    if (applicantAction) return;
+
+    setApplicantAction({ appId, type: "unaccept" });
     try {
       const response = await gigService.unacceptApplicant(id, appId);
       if (response.success) {
-        await fetchGig();
+        await fetchGig({ showPageLoading: false });
       }
     } catch (err) {
       console.error("Failed to unaccept applicant", err);
+    } finally {
+      setApplicantAction(null);
     }
   };
 
@@ -236,21 +252,43 @@ export default function GigDetailPage() {
                     {app.isAccepted && (
                         <>
                         <span className="text-xs font-semibold text-ruin-background bg-[#00C9A7] px-2 py-1 rounded">ACCEPTED</span>
+                        {applicantAction?.appId === app.id && applicantAction.type === "unaccept" ? (
+                          <button 
+                              disabled
+                              className="inline-flex min-w-[84px] items-center justify-center gap-1.5 rounded border border-ruin-magenta px-3 py-1 text-xs font-semibold text-ruin-magenta opacity-70"
+                          >
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Unaccepting
+                          </button>
+                        ) : (
                         <button 
                             onClick={() => handleUnacceptApplicant(app.id)}
-                            className="text-xs font-semibold text-ruin-magenta border border-ruin-magenta hover:bg-ruin-magenta/10 px-3 py-1 rounded transition-colors"
+                            disabled={Boolean(applicantAction)}
+                            className="text-xs font-semibold text-ruin-magenta border border-ruin-magenta hover:bg-ruin-magenta/10 px-3 py-1 rounded transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Unaccept
                         </button>
+                        )}
                         </>
                     )}
                     {!app.isAccepted && gig.status === "open" && (
+                      applicantAction?.appId === app.id && applicantAction.type === "accept" ? (
+                        <button 
+                            disabled
+                            className="inline-flex min-w-[124px] items-center justify-center gap-1.5 rounded border border-[#00C9A7] px-3 py-1 text-xs font-semibold text-[#00C9A7] opacity-70"
+                        >
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Accepting
+                        </button>
+                      ) : (
                         <button 
                             onClick={() => handleAcceptApplicant(app.id)}
-                            className="text-xs font-semibold text-[#00C9A7] border border-[#00C9A7] hover:bg-[#00C9A7]/10 px-3 py-1 rounded transition-colors"
+                            disabled={Boolean(applicantAction)}
+                            className="text-xs font-semibold text-[#00C9A7] border border-[#00C9A7] hover:bg-[#00C9A7]/10 px-3 py-1 rounded transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Accept Applicant
                         </button>
+                      )
                     )}
                 </>
             )
@@ -264,6 +302,9 @@ export default function GigDetailPage() {
   return (
     <>
       {isDeleting && <ActionLoader message="Deleting gig..." />}
+      {applicantAction && (
+        <ActionLoader message={applicantAction.type === "accept" ? "Accepting applicant..." : "Unaccepting applicant..."} />
+      )}
       <DetailPageLayout
         title={gig.title}
         postedAt={postedAt}
