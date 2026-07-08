@@ -53,6 +53,7 @@ public class FlatmateService {
         return mapToListingResponse(listing);
     }
 
+    @Transactional(readOnly = true)
     public Page<FlatmateListingResponse> getListings(ListingStatus status, GenderPreference genderPreference, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -68,6 +69,7 @@ public class FlatmateService {
         return listings.map(this::mapToListingResponse);
     }
 
+    @Transactional(readOnly = true)
     public FlatmateListingDetailResponse getListingDetails(UUID listingId, String requesterEmail) {
         FlatmateListing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));

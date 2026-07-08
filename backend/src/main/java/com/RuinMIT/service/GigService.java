@@ -49,12 +49,14 @@ public class GigService {
         return mapToGigResponse(gig);
     }
 
+    @Transactional(readOnly = true)
     public Page<GigResponse> getOpenGigs(int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return gigRepository.findByStatusIn(List.of(GigStatus.open, GigStatus.in_progress), pageRequest)
                 .map(this::mapToGigResponse);
     }
 
+    @Transactional(readOnly = true)
     public GigDetailResponse getGigDetails(UUID gigId, String userEmail) {
         Gig gig = gigRepository.findById(gigId)
                 .orElseThrow(() -> new ResourceNotFoundException("Gig not found"));

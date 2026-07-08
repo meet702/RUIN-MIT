@@ -7,7 +7,7 @@ import CurrencyInput from "../ui/CurrencyInput";
 import ToggleGroup from "../ui/ToggleGroup";
 import ActionLoader from "../ui/ActionLoader";
 
-const OFFER_VEHICLES = ["bike", "auto", "cab", "car"];
+const OFFER_VEHICLES = ["bike", "car"];
 const CAR_SEATS = ["1", "2", "3"];
 const CO_PASSENGER_VEHICLES = ["auto", "cab"];
 const AUTO_SEATS = ["1", "2"];
@@ -235,7 +235,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
       }
     } else {
       if (!OFFER_VEHICLES.includes(form.vehicleType)) {
-        nextErrors.vehicleType = "Choose bike, auto, cab, or car.";
+        nextErrors.vehicleType = "Choose bike or car.";
       }
       if (!getOfferSeats(form.vehicleType).includes(String(form.totalSeats))) {
         if (form.vehicleType === "car") {
@@ -400,7 +400,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
                         active={form.vehicleType === vehicle}
                         onClick={() => updateField("vehicleType", vehicle)}
                       >
-                        {vehicle === "bike" ? "Bike" : vehicle === "auto" ? "Auto" : vehicle === "cab" ? "Cab" : "Car"}
+                        {vehicle === "bike" ? "Bike" : "Car"}
                       </Chip>
                     ))}
                   </div>

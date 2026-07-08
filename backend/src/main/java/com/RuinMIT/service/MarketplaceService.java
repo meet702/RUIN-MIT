@@ -50,6 +50,7 @@ public class MarketplaceService {
         return mapToListingResponse(listing);
     }
 
+    @Transactional(readOnly = true)
     public Page<MarketplaceListingResponse> getListings(
             MarketplaceCategory category,
             ItemCondition condition,
@@ -66,6 +67,7 @@ public class MarketplaceService {
         return listings.map(this::mapToListingResponse);
     }
 
+    @Transactional(readOnly = true)
     public MarketplaceListingDetailResponse getListingDetails(UUID listingId, String requesterEmail) {
         MarketplaceListing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Listing not found"));

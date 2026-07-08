@@ -50,6 +50,7 @@ public class RideService {
         return mapToRideResponse(ride);
     }
 
+    @Transactional(readOnly = true)
     public Page<RideResponse> getRides(RideStatus status, VehicleType vehicleType, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
@@ -65,6 +66,7 @@ public class RideService {
         return rides.map(this::mapToRideResponse);
     }
 
+    @Transactional(readOnly = true)
     public RideDetailResponse getRideDetails(UUID rideId) {
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ride not found"));
