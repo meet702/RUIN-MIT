@@ -15,8 +15,8 @@ const CAB_SEATS = ["1", "2", "3"];
 
 function getOfferSeats(vehicleType) {
   if (vehicleType === "bike") return ["1"];
-  if (vehicleType === "auto" || vehicleType === "cab") return ["1", "2"];
-  return CAR_SEATS;
+  if (vehicleType === "car") return CAR_SEATS;
+  return ["1"];
 }
 
 function isCoPassengerVehicle(vehicleType) {
