@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, Minus, Send, X, ArrowLeft } from "lucide-react";
 import { chatService, getChatToken } from "../../services/ChatService";
 import { useChatWebSocket } from "../../hooks/useChatWebSocket";
-import { useChat } from "../../context/ChatContext";
+import { sortConversationsByRecent, useChat } from "../../context/ChatContext";
 import ConversationTypeIcon, { getTypeConfig } from "./ConversationTypeIcon";
 
 function getCurrentUserId() {
@@ -178,7 +178,7 @@ export default function ChatPopup() {
           scrollToBottom();
         }
 
-        setConversations((items) => items.map((item) => (
+        setConversations((items) => sortConversationsByRecent(items.map((item) => (
           item.id === incomingMessage.conversationId
             ? {
                 ...item,
@@ -189,7 +189,7 @@ export default function ChatPopup() {
                   : (item.unreadCount || 0) + 1,
               }
             : item
-        )));
+        ))));
       })
     ));
 

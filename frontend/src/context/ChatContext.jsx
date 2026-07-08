@@ -3,6 +3,12 @@ import { chatService } from "../services/ChatService";
 
 const ChatContext = createContext(undefined);
 
+export function sortConversationsByRecent(items) {
+  return [...items].sort((a, b) => (
+    new Date(b.lastMessageAt || b.createdAt || 0) - new Date(a.lastMessageAt || a.createdAt || 0)
+  ));
+}
+
 export function ChatProvider({ children }) {
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
@@ -15,14 +21,14 @@ export function ChatProvider({ children }) {
         ? items.map((item) => item.id === conversation.id ? { ...item, ...conversation } : item)
         : [conversation, ...items];
 
-      return next.sort((a, b) => new Date(b.lastMessageAt || b.createdAt || 0) - new Date(a.lastMessageAt || a.createdAt || 0));
+      return sortConversationsByRecent(next);
     });
   }, []);
 
   const loadConversations = useCallback(async () => {
     const response = await chatService.getConversations();
     if (response.success) {
-      setConversations(response.data || []);
+      setConversations(sortConversationsByRecent(response.data || []));
     }
     return response;
   }, []);
