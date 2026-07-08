@@ -206,6 +206,16 @@ export default function ChatPopup() {
     if (sent) {
       setMessageText("");
       setError("");
+      setConversations((items) => sortConversationsByRecent(items.map((item) => (
+        item.id === selectedConversation.id
+          ? {
+              ...item,
+              lastMessage: content,
+              lastMessageAt: new Date().toISOString(),
+              unreadCount: 0,
+            }
+          : item
+      ))));
     } else {
       setError("Reconnecting. Try again in a moment.");
     }
