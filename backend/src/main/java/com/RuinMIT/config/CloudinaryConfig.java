@@ -21,6 +21,7 @@ public class CloudinaryConfig {
 
     @Bean
     public Cloudinary cloudinary() {
+        System.out.println("Cloud name: [" + cloudName + "], key length: " + (apiKey != null ? apiKey.length() : "null"));
         return new Cloudinary(Map.of(
                 "cloud_name", cloudName,
                 "api_key", apiKey,
