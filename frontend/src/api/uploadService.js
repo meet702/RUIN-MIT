@@ -5,13 +5,16 @@ export const uploadService = {
     const formData = new FormData();
     formData.append("file", file);
 
-    // Don't set Content-Type manually — let axios/browser handle the boundary
-    const response = await api.post("/upload", formData);
+    const response = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": undefined, // removes the inherited application/json default
+      },
+    });
 
     if (!response.data.success) {
       throw new Error(response.data.message);
     }
 
     return response.data.data.url;
-  },
+  }, 
 };
