@@ -110,7 +110,7 @@ const isNotificationForActiveChat = (notification, chatState, recentMessages) =>
 };
 
 export default function NotificationBell() {
-  const { activeConversationId, isChatOpen, openConversation } = useChat();
+  const { activeConversationId, isChatOpen, loadConversations, openConversation } = useChat();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -274,6 +274,24 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const openMessageNotification = useCallback(async (notification) => {
+    const convId = getNotificationConversationId(notification);
+    if (!convId) {
+      return false;
+    }
+
+    try {
+      const response = await loadConversations();
+      const conversation = response?.data?.find((item) => String(item.id) === String(convId));
+      openConversation(conversation || convId);
+    } catch (err) {
+      console.error("Failed to load notification conversation", err);
+      openConversation(convId);
+    }
+
+    return true;
+  }, [loadConversations, openConversation]);
+
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
       try {
@@ -293,9 +311,8 @@ export default function NotificationBell() {
     }
 
     if (isMessageNotification(notification)) {
-      const convId = getNotificationConversationId(notification);
-      if (convId) {
-        openConversation(convId);
+      const didOpen = await openMessageNotification(notification);
+      if (didOpen) {
         setIsOpen(false);
       }
     }
@@ -335,10 +352,7 @@ export default function NotificationBell() {
     }
 
     if (isMessageNotification(notification)) {
-      const convId = getNotificationConversationId(notification);
-      if (convId) {
-        openConversation(convId);
-      }
+      await openMessageNotification(notification);
     }
   };
 
