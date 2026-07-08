@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  ExternalLink,
   KeyRound,
   LogOut,
   MessageSquareText,
@@ -13,8 +12,6 @@ import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import Button from "../components/ui/Button";
 import ContactFeedbackModal from "../components/profile/ContactFeedbackModal";
-
-const SUPPORT_EMAIL = "meetchhabhaiya10@gmail.com";
 
 function ProfileAction({ as: Component = Link, icon: Icon, actionIcon: ActionIcon = ArrowRight, title, description, className = "", ...props }) {
   return (
@@ -120,15 +117,6 @@ export default function ProfilePage() {
                 </span>
                 <ArrowRight size={18} className="shrink-0 text-ruin-muted transition group-hover:text-ruin-orange" />
               </button>
-              
-              <ProfileAction
-                as="a"
-                href={`mailto:${SUPPORT_EMAIL}?subject=RuinMIT%20Account%20Help`}
-                icon={ShieldCheck}
-                actionIcon={ExternalLink}
-                title="Account Help"
-                description="Get help with login, verification, or your account."
-              />
             </div>
 
             {(resetStatus || resetError) && (
