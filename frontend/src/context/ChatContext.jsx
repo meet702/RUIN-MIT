@@ -5,7 +5,8 @@ const ChatContext = createContext(undefined);
 
 export function sortConversationsByRecent(items) {
   return [...items].sort((a, b) => (
-    new Date(b.lastMessageAt || b.createdAt || 0) - new Date(a.lastMessageAt || a.createdAt || 0)
+    new Date(b.localLastActivityAt || b.lastMessageAt || b.createdAt || 0)
+      - new Date(a.localLastActivityAt || a.lastMessageAt || a.createdAt || 0)
   ));
 }
 

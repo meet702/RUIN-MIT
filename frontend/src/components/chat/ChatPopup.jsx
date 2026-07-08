@@ -63,6 +63,8 @@ const FILTER_TABS = [
   { key: "lost_found",  label: "L&F" },
 ];
 
+const CHAT_TRANSITION_MS = 220;
+
 export default function ChatPopup() {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
@@ -70,6 +72,8 @@ export default function ChatPopup() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [error, setError] = useState("");
+  const [isChatMounted, setIsChatMounted] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(false);
   const messagesEndRef = useRef(null);
   const currentUserId = useMemo(getCurrentUserId, []);
   const {
@@ -102,6 +106,22 @@ export default function ChatPopup() {
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }));
   }, []);
+
+  const closeChat = useCallback(() => {
+    setIsChatOpen(false);
+  }, [setIsChatOpen]);
+
+  useEffect(() => {
+    if (isChatOpen) {
+      setIsChatMounted(true);
+      const frameId = requestAnimationFrame(() => setIsChatVisible(true));
+      return () => cancelAnimationFrame(frameId);
+    }
+
+    setIsChatVisible(false);
+    const timeoutId = setTimeout(() => setIsChatMounted(false), CHAT_TRANSITION_MS);
+    return () => clearTimeout(timeoutId);
+  }, [isChatOpen]);
 
   const fetchConversations = useCallback(async () => {
     setIsLoadingConversations(true);
@@ -163,6 +183,7 @@ export default function ChatPopup() {
     const unsubscribers = conversations.map((conversation) => (
       subscribeToConversation(conversation.id, (incomingMessage) => {
         const isActiveConversation = activeConversationId === incomingMessage.conversationId;
+        const activityAt = incomingMessage.createdAt || new Date().toISOString();
 
         if (isActiveConversation) {
           setMessages((items) => (
@@ -183,7 +204,8 @@ export default function ChatPopup() {
             ? {
                 ...item,
                 lastMessage: incomingMessage.content,
-                lastMessageAt: incomingMessage.createdAt,
+                lastMessageAt: activityAt,
+                localLastActivityAt: activityAt,
                 unreadCount: isActiveConversation || incomingMessage.senderId === currentUserId
                   ? item.unreadCount
                   : (item.unreadCount || 0) + 1,
@@ -204,6 +226,7 @@ export default function ChatPopup() {
 
     const sent = sendMessage(selectedConversation.id, content);
     if (sent) {
+      const activityAt = new Date().toISOString();
       setMessageText("");
       setError("");
       setConversations((items) => sortConversationsByRecent(items.map((item) => (
@@ -211,7 +234,8 @@ export default function ChatPopup() {
           ? {
               ...item,
               lastMessage: content,
-              lastMessageAt: new Date().toISOString(),
+              lastMessageAt: activityAt,
+              localLastActivityAt: activityAt,
               unreadCount: 0,
             }
           : item
@@ -221,7 +245,7 @@ export default function ChatPopup() {
     }
   };
 
-  if (!isChatOpen) {
+  if (!isChatOpen && !isChatMounted) {
     return (
       <button
         type="button"
@@ -240,16 +264,26 @@ export default function ChatPopup() {
   }
 
   return (
-    // Mobile: full-screen fixed overlay (inset-0, no rounded corners, no side-by-side).
-    // Desktop (sm+): the original bottom-right floating card with fixed widths.
-    <div
-      className="
-        fixed inset-0 z-50 flex flex-col
-        sm:inset-auto sm:bottom-5 sm:right-5 sm:flex-row
-        sm:max-h-[78vh] sm:overflow-hidden sm:rounded-lg sm:border sm:border-ruin-border
-        bg-ruin-card shadow-2xl
-      "
-    >
+    <>
+      <div
+        className={`fixed inset-0 z-40 bg-transparent transition-opacity duration-200 ease-out ${
+          isChatVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={closeChat}
+        aria-hidden="true"
+      />
+      {/* Mobile: full-screen fixed overlay. Desktop: bottom-right floating card. */}
+      <div
+        className={`
+          fixed inset-0 z-50 flex flex-col
+          sm:inset-auto sm:bottom-5 sm:right-5 sm:flex-row
+          sm:max-h-[78vh] sm:overflow-hidden sm:rounded-lg sm:border sm:border-ruin-border
+          bg-ruin-card shadow-2xl
+          transform-gpu transition-all duration-200 ease-out
+          ${isChatVisible ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none translate-y-4 scale-[0.98] opacity-0"}
+        `}
+        onClick={(event) => event.stopPropagation()}
+      >
       {/* Conversation list: full width on mobile, hidden if a conversation is open on mobile */}
       <div
         className={`
@@ -263,7 +297,7 @@ export default function ChatPopup() {
             <h2 className="font-heading text-lg font-bold text-ruin-text">Messages</h2>
             {!isConnected && <p className="text-xs text-ruin-muted">Reconnecting...</p>}
           </div>
-          <button type="button" onClick={() => setIsChatOpen(false)} className="text-ruin-muted hover:text-ruin-text" aria-label="Minimize messages">
+          <button type="button" onClick={closeChat} className="text-ruin-muted hover:text-ruin-text" aria-label="Minimize messages">
             <Minus size={18} />
           </button>
         </div>
@@ -455,6 +489,7 @@ export default function ChatPopup() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
