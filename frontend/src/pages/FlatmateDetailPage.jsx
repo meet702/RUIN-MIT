@@ -220,9 +220,18 @@ export default function FlatmateDetailPage() {
             <div className="pt-4 border-t border-ruin-border">
             <h3 className="text-sm font-medium text-ruin-text mb-3">Interested?</h3>
             {listing.hasInquired ? (
+                <div className="space-y-3">
                 <p className="text-sm text-ruin-muted p-3 bg-ruin-background rounded-lg border border-ruin-border text-center">
                 You have already inquired about this listing.
                 </p>
+                <ChatButton
+                    otherUserId={listing.poster?.id}
+                    otherUserName={listing.poster?.fullName}
+                    referenceType="flatmate"
+                    referenceId={listing.id}
+                    buttonText="Chat with poster"
+                />
+                </div>
             ) : (
                 <div className="space-y-3">
                 <textarea

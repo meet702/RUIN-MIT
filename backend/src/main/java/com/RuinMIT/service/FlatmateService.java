@@ -27,6 +27,7 @@ public class FlatmateService {
     private final FlatmateInquiryRepository inquiryRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ChatService chatService;
     private final CloudinaryService cloudinaryService;
 
     @Transactional
@@ -138,6 +139,7 @@ public class FlatmateService {
                 .build();
 
         inquiryRepository.save(inquiry);
+        chatService.getOrCreateConversation(sender.getId(), listing.getPostedBy().getId(), "flatmate", listing.getId());
 
         String title = "New Inquiry";
         String message = sender.getFullName() + " inquired about your flatmate listing: " + listing.getTitle();
