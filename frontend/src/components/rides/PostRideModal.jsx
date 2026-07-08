@@ -10,8 +10,8 @@ import ActionLoader from "../ui/ActionLoader";
 const OFFER_VEHICLES = ["bike", "auto", "cab", "car"];
 const CAR_SEATS = ["1", "2", "3"];
 const CO_PASSENGER_VEHICLES = ["auto", "cab"];
-const AUTO_SEATS = ["2"];
-const CAB_SEATS = ["2"];
+const AUTO_SEATS = ["1", "2"];
+const CAB_SEATS = ["1", "2", "3"];
 
 function getOfferSeats(vehicleType) {
   if (vehicleType === "bike") return ["1"];
@@ -226,7 +226,7 @@ export default function PostRideModal({ open, onClose, onSubmit, initialData = n
         nextErrors.vehicleType = "Choose auto or cab.";
       }
       if (!getCoPassengerSeats(form.vehicleType).includes(String(form.totalSeats))) {
-        nextErrors.totalSeats = "Auto and cab rides use 2 seats.";
+        nextErrors.totalSeats = form.vehicleType === "cab" ? "Choose 1, 2, or 3 seats." : "Choose 1 or 2 seats.";
       }
       if (!form.estimatedTotalFare) {
         nextErrors.estimatedTotalFare = "Estimated total fare is required.";
