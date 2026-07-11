@@ -8,7 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -58,16 +65,39 @@ public class CloudinaryService {
      */
     public String extractPublicId(String cloudinaryUrl) {
         try {
-            String[] parts = cloudinaryUrl.split("/upload/");
+            String path = URI.create(cloudinaryUrl).getPath();
+            String[] parts = path.split("/upload/", 2);
             if (parts.length < 2) return null;
-            String afterUpload = parts[1]; // e.g. "v1234567/ruinmit/filename.jpg"
-            String withoutVersion = afterUpload.replaceFirst("v[0-9]+/", "");
-            // Remove file extension
-            int dotIndex = withoutVersion.lastIndexOf('.');
-            return dotIndex > 0 ? withoutVersion.substring(0, dotIndex) : withoutVersion;
+
+            String[] segments = parts[1].split("/");
+            int publicIdStart = findPublicIdStart(segments);
+            if (publicIdStart >= segments.length) return null;
+
+            String publicIdWithExtension = String.join("/", java.util.Arrays.copyOfRange(segments, publicIdStart, segments.length));
+            int dotIndex = publicIdWithExtension.lastIndexOf('.');
+            String publicId = dotIndex > 0 ? publicIdWithExtension.substring(0, dotIndex) : publicIdWithExtension;
+            return URLDecoder.decode(publicId, StandardCharsets.UTF_8);
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private int findPublicIdStart(String[] segments) {
+        for (int i = 0; i < segments.length; i++) {
+            if (segments[i].matches("v\\d+")) {
+                return i + 1;
+            }
+        }
+
+        int index = 0;
+        while (index < segments.length && isTransformationSegment(segments[index])) {
+            index++;
+        }
+        return index;
+    }
+
+    private boolean isTransformationSegment(String segment) {
+        return segment.contains(",") || segment.matches("(?i)(a|ar|b|bo|c|co|d|dl|e|eo|f|fl|fn|g|h|ki|l|o|p|pg|q|r|so|t|u|w|x|y|z)_.+");
     }
 
     /**
@@ -91,7 +121,10 @@ public class CloudinaryService {
      */
     public void deleteMultipleByUrls(java.util.List<String> urls) {
         if (urls == null || urls.isEmpty()) return;
-        urls.forEach(this::deleteByUrl);
+        urls.stream()
+                .filter(url -> url != null && !url.isBlank())
+                .distinct()
+                .forEach(this::deleteByUrl);
     }
 
     /**
@@ -101,6 +134,25 @@ public class CloudinaryService {
     @org.springframework.scheduling.annotation.Async
     public void deleteMultipleByUrlsAsync(java.util.List<String> urls) {
         if (urls == null || urls.isEmpty()) return;
-        urls.forEach(this::deleteByUrl);
+        deleteMultipleByUrls(urls);
+    }
+
+    @org.springframework.scheduling.annotation.Async
+    public void deleteRemovedUrlsAsync(List<String> oldUrls, List<String> newUrls) {
+        if (oldUrls == null || oldUrls.isEmpty()) return;
+
+        Set<String> retainedUrls = newUrls == null
+                ? Set.of()
+                : newUrls.stream()
+                .filter(url -> url != null && !url.isBlank())
+                .collect(Collectors.toCollection(HashSet::new));
+
+        List<String> removedUrls = oldUrls.stream()
+                .filter(url -> url != null && !url.isBlank())
+                .filter(url -> !retainedUrls.contains(url))
+                .distinct()
+                .toList();
+
+        deleteMultipleByUrls(removedUrls);
     }
 }

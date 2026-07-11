@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -101,6 +102,8 @@ public class FlatmateService {
             throw new UnauthorizedException("Only the poster can edit this listing");
         }
 
+        List<String> oldImageUrls = new ArrayList<>(listing.getImageUrlList());
+
         listing.setTitle(request.getTitle());
         listing.setDescription(request.getDescription());
         listing.setLocation(request.getLocation());
@@ -111,6 +114,7 @@ public class FlatmateService {
         listing.setImageUrlList(request.getImageUrls());
 
         listing = listingRepository.save(listing);
+        cloudinaryService.deleteRemovedUrlsAsync(oldImageUrls, request.getImageUrls());
         return mapToListingResponse(listing);
     }
 
@@ -184,7 +188,7 @@ public class FlatmateService {
         }
 
         // Capture image URLs before deleting the entity
-        List<String> imageUrls = listing.getImageUrlList();
+        List<String> imageUrls = new ArrayList<>(listing.getImageUrlList());
 
         listingRepository.delete(listing); // Delete DB record first for fast response
 

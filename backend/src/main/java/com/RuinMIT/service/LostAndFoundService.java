@@ -72,6 +72,8 @@ public class LostAndFoundService {
             throw new UnauthorizedException("Only the poster can edit this post");
         }
 
+        List<String> oldImageUrls = new ArrayList<>(post.getImageUrlList());
+
         post.setType(request.getType());
         post.setTitle(request.getTitle());
         post.setDescription(request.getDescription());
@@ -79,6 +81,7 @@ public class LostAndFoundService {
         post.setImageUrlList(request.getImageUrls());
 
         post = lostAndFoundRepository.save(post);
+        cloudinaryService.deleteRemovedUrlsAsync(oldImageUrls, request.getImageUrls());
         return mapToResponse(post);
     }
 
@@ -111,7 +114,7 @@ public class LostAndFoundService {
         }
 
         // Capture image URLs before deleting the entity
-        List<String> imageUrls = post.getImageUrlList();
+        List<String> imageUrls = new ArrayList<>(post.getImageUrlList());
 
         lostAndFoundRepository.delete(post); // Delete DB record first for fast response
 
