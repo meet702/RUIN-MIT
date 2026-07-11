@@ -25,6 +25,8 @@ import RidesPage from "./pages/RidesPage";
 import RideDetailPage from "./pages/RideDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 
+import LandingPage from "./pages/LandingPage";
+
 function AppShell() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
@@ -47,6 +49,7 @@ export default function App() {
           <TopProgressBar />
           <Routes>
           {/* Public Auth Routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -55,7 +58,6 @@ export default function App() {
 
           {/* Main App Routes */}
           <Route element={<AppShell />}>
-            <Route path="/" element={<Navigate to="/gigs" replace />} />
             <Route path="/gigs" element={<GigBoardPage />} />
             
             <Route path="/flatmates" element={<FlatmatePage />} />
