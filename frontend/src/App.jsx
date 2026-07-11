@@ -6,7 +6,6 @@ import ProtectedRoute from "./components/layout/ProtectedRoute";
 import ChatPopup from "./components/chat/ChatPopup";
 import TopProgressBar from "./components/ui/TopProgressBar";
 import { useAuth } from "./context/AuthContext";
-import { useBlockBackNav } from "./hooks/useBlockBackNav";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -32,9 +31,6 @@ function AppShell() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const isProfilePage = location.pathname === "/profile";
-
-  // Block browser back button for authenticated users
-  useBlockBackNav();
 
   return (
     <>

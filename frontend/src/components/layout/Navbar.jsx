@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import Button from "../ui/Button";
@@ -17,10 +17,13 @@ const NAV_LINKS = [
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
+    // Replace so the user can't press Back into a stale authenticated page
+    navigate("/", { replace: true });
   };
 
   return (

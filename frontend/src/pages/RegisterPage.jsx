@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 
@@ -10,8 +10,13 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  const { register } = useAuth();
+  const { register, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Auth guard: already logged in → go straight to the app
+  if (!authLoading && isAuthenticated) {
+    return <Navigate to="/gigs" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,8 +31,8 @@ export default function RegisterPage() {
 
     try {
       await register(fullName, email, password);
-      // Backend successful, now navigate to verify email
-      navigate("/verify-email", { state: { email } });
+      // Use replace so /register is removed from history
+      navigate("/verify-email", { replace: true, state: { email } });
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed. Try again.");
     } finally {
