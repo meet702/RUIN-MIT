@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Menu, X, MapPin, DollarSign, Tag, Users, Search } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -136,6 +136,12 @@ export default function LandingPage() {
   const { user, isAuthenticated, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Redirect authenticated users straight to the app — replace() removes
+  // the landing page from history so the back button won't return here.
+  if (isAuthenticated) {
+    return <Navigate to="/gigs" replace />;
+  }
 
   const handleLogout = async () => {
     await logout();
