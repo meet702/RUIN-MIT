@@ -13,11 +13,14 @@ import EmptyState from "../components/ui/EmptyState";
 import { Search } from "lucide-react";
 
 export default function GigBoardPage() {
-  const { gigs, selectedStatus, selectStatus, addGig, isExiting, isLoading } = useGigs();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const currentUserId = getCurrentUserId(user);
+  const { gigs, finishedGigs, selectedStatus, selectStatus, addGig, isExiting, isLoading } = useGigs({
+    currentUserId,
+    isAuthenticated,
+  });
 
   const handlePostClick = () => {
     if (!isAuthenticated) {
@@ -47,7 +50,7 @@ export default function GigBoardPage() {
         
         {isLoading ? (
             <SkeletonCard count={6} />
-        ) : gigs.length === 0 ? (
+        ) : gigs.length === 0 && finishedGigs.length === 0 ? (
             <EmptyState 
               icon={Search}
               title="No gigs found"
@@ -63,6 +66,9 @@ export default function GigBoardPage() {
                 renderCard={(gig, index, isOwnPost) => (
                   <GigCard key={gig.id} gig={gig} index={index} isOwnPost={isOwnPost} />
                 )}
+                extraSections={[
+                  { title: "Finished By You", items: finishedGigs },
+                ]}
               />
             </div>
         )}

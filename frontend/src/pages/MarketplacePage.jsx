@@ -8,7 +8,7 @@ import PostMarketplaceModal from "../components/marketplace/PostMarketplaceModal
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
 import FilterPillGroup from "../components/ui/FilterPillGroup";
-import { getCurrentUserId } from "../utils/ownership";
+import { getCurrentUserId, isOwnPost } from "../utils/ownership";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
 import { Package } from "lucide-react";
@@ -17,6 +17,7 @@ const CATEGORIES = ["All", "books", "electronics", "cycles", "stationery", "clot
 
 export default function MarketplacePage() {
   const [listings, setListings] = useState([]);
+  const [soldListings, setSoldListings] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,16 +30,24 @@ export default function MarketplacePage() {
     setIsLoading(true);
     try {
       const cat = selectedCategory === "All" ? null : selectedCategory;
-      const response = await marketplaceService.getListings(cat, null, "available", 0, 50);
-      if (response.success) {
-        setListings(response.data.content || []);
+      const [availableResponse, soldResponse] = await Promise.all([
+        marketplaceService.getListings(cat, null, "available", 0, 50),
+        isAuthenticated ? marketplaceService.getListings(cat, null, "sold", 0, 50) : Promise.resolve(null),
+      ]);
+      if (availableResponse.success) {
+        setListings(availableResponse.data.content || []);
+      }
+      if (soldResponse?.success) {
+        setSoldListings((soldResponse.data.content || []).filter((listing) => isOwnPost(listing, currentUserId)));
+      } else {
+        setSoldListings([]);
       }
     } catch (error) {
       console.error("Failed to fetch marketplace listings", error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCategory]);
+  }, [currentUserId, isAuthenticated, selectedCategory]);
 
   useEffect(() => {
     fetchListings();
@@ -96,7 +105,7 @@ export default function MarketplacePage() {
         
         {isLoading ? (
             <SkeletonCard count={6} />
-        ) : listings.length === 0 ? (
+        ) : listings.length === 0 && soldListings.length === 0 ? (
             <EmptyState 
               icon={Package}
               title="No items found"
@@ -111,6 +120,9 @@ export default function MarketplacePage() {
               renderCard={(listing, i, isOwnPost) => (
                 <MarketplaceCard key={listing.id} listing={listing} index={i} isOwnPost={isOwnPost} />
               )}
+              extraSections={[
+                { title: "Sold By You", items: soldListings },
+              ]}
             />
         )}
       </div>

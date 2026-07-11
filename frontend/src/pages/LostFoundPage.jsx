@@ -8,13 +8,14 @@ import PostLostFoundModal from "../components/lostfound/PostLostFoundModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
 import FilterPillGroup from "../components/ui/FilterPillGroup";
-import { getCurrentUserId } from "../utils/ownership";
+import { getCurrentUserId, isOwnPost } from "../utils/ownership";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
 import { Search } from "lucide-react";
 
 export default function LostFoundPage() {
   const [posts, setPosts] = useState([]);
+  const [resolvedPosts, setResolvedPosts] = useState([]);
   const [selectedType, setSelectedType] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,17 +28,24 @@ export default function LostFoundPage() {
     setIsLoading(true);
     try {
       const type = selectedType === "All" ? null : selectedType;
-      // Fetch open status by default, or all if we want. Assuming we want to show all for lost & found.
-      const response = await lostFoundService.getPosts(type, null, 0, 50);
-      if (response.success) {
-        setPosts(response.data.content || []);
+      const [openResponse, resolvedResponse] = await Promise.all([
+        lostFoundService.getPosts(type, "open", 0, 50),
+        isAuthenticated ? lostFoundService.getPosts(type, "resolved", 0, 50) : Promise.resolve(null),
+      ]);
+      if (openResponse.success) {
+        setPosts(openResponse.data.content || []);
+      }
+      if (resolvedResponse?.success) {
+        setResolvedPosts((resolvedResponse.data.content || []).filter((post) => isOwnPost(post, currentUserId)));
+      } else {
+        setResolvedPosts([]);
       }
     } catch (error) {
       console.error("Failed to fetch lost & found posts", error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedType]);
+  }, [currentUserId, isAuthenticated, selectedType]);
 
   useEffect(() => {
     fetchPosts();
@@ -95,7 +103,7 @@ export default function LostFoundPage() {
         
         {isLoading ? (
             <SkeletonCard count={6} />
-        ) : posts.length === 0 ? (
+        ) : posts.length === 0 && resolvedPosts.length === 0 ? (
             <EmptyState 
               icon={Search}
               title="No items found"
@@ -110,6 +118,9 @@ export default function LostFoundPage() {
               renderCard={(post, i, isOwnPost) => (
                 <LostFoundCard key={post.id} post={post} index={i} isOwnPost={isOwnPost} />
               )}
+              extraSections={[
+                { title: "Resolved By You", items: resolvedPosts },
+              ]}
             />
         )}
       </div>

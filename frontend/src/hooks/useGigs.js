@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect } from "react";
 import { gigService } from "../api/gigService";
+import { isOwnPost } from "../utils/ownership";
 
 function getGigErrorMessage(error) {
   const responseData = error.response?.data;
@@ -23,8 +24,9 @@ function getGigErrorMessage(error) {
   return "Failed to post gig";
 }
 
-export function useGigs() {
+export function useGigs({ currentUserId, isAuthenticated } = {}) {
   const [gigs, setGigs] = useState([]);
+  const [finishedGigs, setFinishedGigs] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("open");
   const [isExiting, setIsExiting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,17 +34,29 @@ export function useGigs() {
   const fetchGigs = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch open gigs from backend
-      const response = await gigService.getOpenGigs(0, 50);
+      const [response, completedResponse, cancelledResponse] = await Promise.all([
+        gigService.getOpenGigs(0, 50),
+        isAuthenticated ? gigService.getGigs("completed", 0, 50) : Promise.resolve(null),
+        isAuthenticated ? gigService.getGigs("cancelled", 0, 50) : Promise.resolve(null),
+      ]);
       if (response.success) {
         setGigs(response.data.content || []);
+      }
+      if (completedResponse?.success || cancelledResponse?.success) {
+        const inactiveGigs = [
+          ...(completedResponse?.success ? completedResponse.data.content || [] : []),
+          ...(cancelledResponse?.success ? cancelledResponse.data.content || [] : []),
+        ];
+        setFinishedGigs(inactiveGigs.filter((gig) => isOwnPost(gig, currentUserId)));
+      } else {
+        setFinishedGigs([]);
       }
     } catch (error) {
       console.error("Failed to fetch gigs", error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentUserId, isAuthenticated]);
 
   useEffect(() => {
     fetchGigs();
@@ -83,6 +97,7 @@ export function useGigs() {
 
   return {
     gigs: visibleGigs,
+    finishedGigs,
     selectedStatus,
     selectStatus,
     addGig,

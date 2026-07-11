@@ -6,16 +6,14 @@ import Button from "../components/ui/Button";
 import FlatmateCard from "../components/flatmates/FlatmateCard";
 import PostFlatmateModal from "../components/flatmates/PostFlatmateModal";
 import ListingSections from "../components/listings/ListingSections";
-import Tag from "../components/ui/Tag";
-import FilterPillGroup from "../components/ui/FilterPillGroup";
-import { getCurrentUserId } from "../utils/ownership";
+import { getCurrentUserId, isOwnPost } from "../utils/ownership";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
 import { Home } from "lucide-react";
 
 export default function FlatmatePage() {
   const [listings, setListings] = useState([]);
-  const [selectedStatus, setSelectedStatus] = useState("open");
+  const [closedListings, setClosedListings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -26,16 +24,24 @@ export default function FlatmatePage() {
   const fetchListings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await flatmateService.getListings(selectedStatus === "All" ? null : selectedStatus, null, 0, 50);
-      if (response.success) {
-        setListings(response.data.content || []);
+      const [openResponse, closedResponse] = await Promise.all([
+        flatmateService.getListings("open", null, 0, 50),
+        isAuthenticated ? flatmateService.getListings("closed", null, 0, 50) : Promise.resolve(null),
+      ]);
+      if (openResponse.success) {
+        setListings(openResponse.data.content || []);
+      }
+      if (closedResponse?.success) {
+        setClosedListings((closedResponse.data.content || []).filter((listing) => isOwnPost(listing, currentUserId)));
+      } else {
+        setClosedListings([]);
       }
     } catch (error) {
       console.error("Failed to fetch flatmate listings", error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedStatus]);
+  }, [currentUserId, isAuthenticated]);
 
   useEffect(() => {
     fetchListings();
@@ -78,22 +84,9 @@ export default function FlatmatePage() {
           </Button>
         </header>
 
-        <FilterPillGroup>
-          {["All", "open", "closed"].map((status) => (
-            <Tag
-              key={status}
-              active={selectedStatus === status}
-              className="capitalize"
-              onClick={() => setSelectedStatus(status)}
-            >
-              {status}
-            </Tag>
-          ))}
-        </FilterPillGroup>
-        
         {isLoading ? (
             <SkeletonCard count={6} />
-        ) : listings.length === 0 ? (
+        ) : listings.length === 0 && closedListings.length === 0 ? (
             <EmptyState 
               icon={Home}
               title="No listings found"
@@ -108,6 +101,9 @@ export default function FlatmatePage() {
               renderCard={(listing, i, isOwnPost) => (
                 <FlatmateCard key={listing.id} listing={listing} index={i} isOwnPost={isOwnPost} />
               )}
+              extraSections={[
+                { title: "Closed By You", items: closedListings },
+              ]}
             />
         )}
       </div>

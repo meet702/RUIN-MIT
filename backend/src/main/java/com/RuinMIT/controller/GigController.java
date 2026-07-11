@@ -2,6 +2,7 @@ package com.RuinMIT.controller;
 
 import com.RuinMIT.dto.ApiResponse;
 import com.RuinMIT.dto.gig.*;
+import com.RuinMIT.entity.GigStatus;
 import com.RuinMIT.service.GigService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,12 +33,13 @@ public class GigController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<GigResponse>>> getOpenGigs(
+    public ResponseEntity<ApiResponse<Page<GigResponse>>> getGigs(
+            @RequestParam(required = false) GigStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         
-        Page<GigResponse> openGigs = gigService.getOpenGigs(page, size);
-        return ResponseEntity.ok(ApiResponse.success("Open gigs retrieved successfully", openGigs));
+        Page<GigResponse> gigs = gigService.getGigs(status, page, size);
+        return ResponseEntity.ok(ApiResponse.success("Gigs retrieved successfully", gigs));
     }
 
     @GetMapping("/{id}")

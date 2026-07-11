@@ -23,6 +23,7 @@ export default function ListingSections({
   currentUserId,
   renderCard,
   gridClassName = "",
+  extraSections = [],
 }) {
   const yourPosts = [];
   const otherPosts = [];
@@ -35,7 +36,9 @@ export default function ListingSections({
     }
   });
 
-  if (yourPosts.length === 0) {
+  const visibleExtraSections = extraSections.filter((section) => section.items?.length > 0);
+
+  if (yourPosts.length === 0 && visibleExtraSections.length === 0) {
     return (
       <ListingGrid className={gridClassName} topMargin="mt-8">
         {items.map((item, index) => renderCard(item, index, false))}
@@ -45,12 +48,14 @@ export default function ListingSections({
 
   return (
     <div className="mt-8 space-y-8">
-      <section>
-        <SectionHeading>Your Posts</SectionHeading>
-        <ListingGrid className={gridClassName}>
-          {yourPosts.map((item, index) => renderCard(item, index, true))}
-        </ListingGrid>
-      </section>
+      {yourPosts.length > 0 && (
+        <section>
+          <SectionHeading>Your Posts</SectionHeading>
+          <ListingGrid className={gridClassName}>
+            {yourPosts.map((item, index) => renderCard(item, index, true))}
+          </ListingGrid>
+        </section>
+      )}
 
       {otherPosts.length > 0 && (
         <section>
@@ -60,6 +65,15 @@ export default function ListingSections({
           </ListingGrid>
         </section>
       )}
+
+      {visibleExtraSections.map((section) => (
+        <section key={section.title}>
+          <SectionHeading>{section.title}</SectionHeading>
+          <ListingGrid className={gridClassName}>
+            {section.items.map((item, index) => renderCard(item, index, true))}
+          </ListingGrid>
+        </section>
+      ))}
     </div>
   );
 }

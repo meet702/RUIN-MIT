@@ -8,7 +8,7 @@ import PostRideModal from "../components/rides/PostRideModal";
 import ListingSections from "../components/listings/ListingSections";
 import Tag from "../components/ui/Tag";
 import FilterPillGroup from "../components/ui/FilterPillGroup";
-import { getCurrentUserId } from "../utils/ownership";
+import { getCurrentUserId, isOwnPost } from "../utils/ownership";
 import SkeletonCard from "../components/ui/SkeletonCard";
 import EmptyState from "../components/ui/EmptyState";
 import { Car } from "lucide-react";
@@ -17,6 +17,7 @@ const VEHICLE_TYPES = ["All", "auto", "cab", "car", "bike", "other"];
 
 export default function RidesPage() {
   const [rides, setRides] = useState([]);
+  const [finishedRides, setFinishedRides] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,17 +30,33 @@ export default function RidesPage() {
     setIsLoading(true);
     try {
       const vType = selectedVehicle === "All" ? null : selectedVehicle;
-      // Fetch open and full rides by default
-      const response = await rideService.getRides(null, vType, 0, 50);
-      if (response.success) {
-        setRides(response.data.content || []);
+      const [openResponse, fullResponse, completedResponse, cancelledResponse] = await Promise.all([
+        rideService.getRides("open", vType, 0, 50),
+        rideService.getRides("full", vType, 0, 50),
+        isAuthenticated ? rideService.getRides("completed", vType, 0, 50) : Promise.resolve(null),
+        isAuthenticated ? rideService.getRides("cancelled", vType, 0, 50) : Promise.resolve(null),
+      ]);
+      const activeRides = [
+        ...(openResponse.success ? openResponse.data.content || [] : []),
+        ...(fullResponse.success ? fullResponse.data.content || [] : []),
+      ];
+      setRides(activeRides);
+
+      if (completedResponse?.success || cancelledResponse?.success) {
+        const inactiveRides = [
+          ...(completedResponse?.success ? completedResponse.data.content || [] : []),
+          ...(cancelledResponse?.success ? cancelledResponse.data.content || [] : []),
+        ];
+        setFinishedRides(inactiveRides.filter((ride) => isOwnPost(ride, currentUserId)));
+      } else {
+        setFinishedRides([]);
       }
     } catch (error) {
       console.error("Failed to fetch rides", error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedVehicle]);
+  }, [currentUserId, isAuthenticated, selectedVehicle]);
 
   useEffect(() => {
     fetchRides();
@@ -97,7 +114,7 @@ export default function RidesPage() {
         
         {isLoading ? (
             <SkeletonCard count={6} />
-        ) : rides.length === 0 ? (
+        ) : rides.length === 0 && finishedRides.length === 0 ? (
             <EmptyState 
               icon={Car}
               title="No rides found"
@@ -112,6 +129,9 @@ export default function RidesPage() {
               renderCard={(ride, i, isOwnPost) => (
                 <RideCard key={ride.id} ride={ride} index={i} isOwnPost={isOwnPost} currentUser={user} />
               )}
+              extraSections={[
+                { title: "Finished By You", items: finishedRides },
+              ]}
             />
         )}
       </div>

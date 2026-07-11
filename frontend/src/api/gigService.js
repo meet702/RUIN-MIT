@@ -6,6 +6,16 @@ export const gigService = {
     return response.data;
   },
 
+  getGigs: async (status, page = 0, size = 10) => {
+    const params = new URLSearchParams();
+    if (status) params.append("status", status);
+    params.append("page", page);
+    params.append("size", size);
+
+    const response = await api.get(`/gigs?${params.toString()}`);
+    return response.data;
+  },
+
   getGigDetails: async (id) => {
     const response = await api.get(`/gigs/${id}`);
     return response.data;

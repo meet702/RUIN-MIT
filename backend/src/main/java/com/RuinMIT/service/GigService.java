@@ -50,9 +50,12 @@ public class GigService {
     }
 
     @Transactional(readOnly = true)
-    public Page<GigResponse> getOpenGigs(int page, int size) {
+    public Page<GigResponse> getGigs(GigStatus status, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return gigRepository.findByStatusIn(List.of(GigStatus.open, GigStatus.in_progress), pageRequest)
+        Page<Gig> gigs = status == null
+                ? gigRepository.findByStatusIn(List.of(GigStatus.open, GigStatus.in_progress), pageRequest)
+                : gigRepository.findByStatus(status, pageRequest);
+        return gigs
                 .map(this::mapToGigResponse);
     }
 
