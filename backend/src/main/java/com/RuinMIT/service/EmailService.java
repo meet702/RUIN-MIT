@@ -38,7 +38,7 @@ public class EmailService {
 
             Map<String, String> sender = new HashMap<>();
             sender.put("name", "RuinMIT");
-            sender.put("email", "meetchhabhaiya10@gmail.com");
+            sender.put("email", "ruinmit69@gmail.com");
             payload.put("sender", sender);
 
             Map<String, String> recipient = new HashMap<>();
@@ -78,7 +78,7 @@ public class EmailService {
             // Sender
             Map<String, String> sender = new HashMap<>();
             sender.put("name", "RuinMIT");
-            sender.put("email", "meetchhabhaiya10@gmail.com");
+            sender.put("email", "ruinmit69@gmail.com");
             payload.put("sender", sender);
 
             // Recipient

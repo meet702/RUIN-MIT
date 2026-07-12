@@ -15,7 +15,7 @@ import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/ui/Avatar";
 import Button from "../components/ui/Button";
 
-const SUPPORT_EMAIL = "meetchhabhaiya10@gmail.com";
+const SUPPORT_EMAIL = "ruinmit69@gmail.com";
 
 function ProfileAction({ as: Component = Link, icon: Icon, title, description, className = "", ...props }) {
   return (
