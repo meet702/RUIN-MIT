@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -9,6 +10,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const { register, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -88,15 +90,24 @@ export default function RegisterPage() {
 
           <label className="block">
             <span className="text-sm font-medium text-ruin-text">Password</span>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 text-ruin-text outline-none transition focus:border-ruin-orange"
-              placeholder="••••••••"
-              minLength={8}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-ruin-border bg-ruin-background px-4 py-3 pr-12 text-ruin-text outline-none transition focus:border-ruin-orange"
+                placeholder="••••••••"
+                minLength={8}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 mt-1 text-ruin-muted hover:text-ruin-text transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </label>
 
           <Button type="submit" variant="orange" className="w-full mt-2" disabled={isLoading}>
